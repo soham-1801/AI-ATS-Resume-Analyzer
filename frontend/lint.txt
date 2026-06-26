@@ -1,0 +1,249 @@
+﻿
+> frontend@0.0.0 lint
+> eslint .
+
+
+D:\Projects\ATS_KIRO\frontend\src\App.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\components\ATSScoreCard.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\components\AnalyticsChart.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\components\Layout.jsx
+   1:8  error  'React' is defined but never used      no-unused-vars
+  10:3  error  'Briefcase' is defined but never used  no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\components\LoadingSpinner.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\components\Navbar.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\components\Sidebar.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\components\SkillMatchCard.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\components\UploadZone.jsx
+   1:8   error  'React' is defined but never used                                      no-unused-vars
+   3:18  error  'File' is defined but never used                                       no-unused-vars
+  10:13  error  The value assigned to 'errorMsg' is not used in subsequent statements  no-useless-assignment
+
+D:\Projects\ATS_KIRO\frontend\src\context\AuthContext.jsx
+    1:8   error    'React' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      no-unused-vars
+   31:7   error    Error: Cannot access variable before it is declared
+
+`logout` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  29 |     } catch (error) {
+  30 |       console.error("Auth verification check failed:", error);
+> 31 |       logout();
+     |       ^^^^^^ `logout` accessed before it is declared
+  32 |     } finally {
+  33 |       setLoading(false);
+  34 |     }
+
+   96 |   };
+   97 |
+>  98 |   const logout = () => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^
+>  99 |     localStorage.removeItem("token");
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 100 |     localStorage.removeItem("refreshToken");
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 101 |     sessionStorage.removeItem("token");
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 102 |     sessionStorage.removeItem("refreshToken");
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 103 |     setToken(null);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 104 |     setUser(null);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 105 |     setLoading(false);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 106 |   };
+      | ^^^^^ `logout` is declared here
+  107 |
+  108 |   return (
+  109 |     <AuthContext.Provider value={{ user, token, loading, login, oauthLogin, register, logout, completeOAuthLogin }}>  react-hooks/immutability
+   38:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  36 |
+  37 |   useEffect(() => {
+> 38 |     checkUserAuth();
+     |     ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  39 |   }, [token]);
+  40 |
+  41 |   const login = async (email, password, remember = true) => {                                                                                                                                                                                                                                                                                                                                                                                                                         react-hooks/set-state-in-effect
+   39:6   warning  React Hook useEffect has a missing dependency: 'checkUserAuth'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react-hooks/exhaustive-deps
+  115:14  error    Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         react-refresh/only-export-components
+
+D:\Projects\ATS_KIRO\frontend\src\layouts\DashboardLayout.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\pages\ATSAnalysis.jsx
+    1:8   error  'React' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+  133:7   error  'MetricCard' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         no-unused-vars
+  180:20  error  Unnecessary escape character: \*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-useless-escape
+  180:22  error  Unnecessary escape character: \-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-useless-escape
+  181:40  error  Unnecessary escape character: \*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-useless-escape
+  181:42  error  Unnecessary escape character: \-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-useless-escape
+  206:9   error  'getCategoryScore' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
+  243:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  241 |
+  242 |   useEffect(() => {
+> 243 |     loadSelectionOptions();
+      |     ^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  244 |   }, []);
+  245 |
+  246 |   const handleAnalyze = async () => {  react-hooks/set-state-in-effect
+
+D:\Projects\ATS_KIRO\frontend\src\pages\Dashboard.jsx
+   1:8  error  'React' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-unused-vars
+   4:8  error  'ATSScoreCard' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         no-unused-vars
+  11:3  error  'Sparkles' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             no-unused-vars
+  15:3  error  'ChevronRight' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         no-unused-vars
+  47:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  45 |
+  46 |   useEffect(() => {
+> 47 |     fetchAnalytics();
+     |     ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  48 |   }, []);
+  49 |
+  50 |   const handleDownloadPdf = async (resultId) => {  react-hooks/set-state-in-effect
+  92:9  error  'hasHistory' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\pages\ForgotPassword.jsx
+   1:8   error    'React' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     no-unused-vars
+   5:10  error    'Sparkles' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-unused-vars
+  29:23  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+  27 |   });
+  28 |
+> 29 |   const newPassword = watchReset("password") || "";
+     |                       ^^^^^^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  30 |
+  31 |   // Password rules logic
+  32 |   const commonWeak = ["password123", "admin123", "qwerty123", "12345678"];  react-hooks/incompatible-library
+
+D:\Projects\ATS_KIRO\frontend\src\pages\JobDescription.jsx
+   1:8   error  'React' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-unused-vars
+  36:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  34 |
+  35 |   useEffect(() => {
+> 36 |     fetchJds();
+     |     ^^^^^^^^ Avoid calling setState() directly within an effect
+  37 |   }, []);
+  38 |
+  39 |   const handleSubmit = async (e) => {  react-hooks/set-state-in-effect
+  52:14  error  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          no-unused-vars
+  68:14  error  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\pages\Login.jsx
+   1:8   error  'React' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           no-unused-vars
+   7:18  error  'oauthLogin' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             no-unused-vars
+  27:7   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  25 |     const rememberedEmail = localStorage.getItem("rememberedEmail");
+  26 |     if (rememberedEmail) {
+> 27 |       setEmail(rememberedEmail);
+     |       ^^^^^^^^ Avoid calling setState() directly within an effect
+  28 |       setRememberMe(true);
+  29 |     } else {
+  30 |       setRememberMe(false);  react-hooks/set-state-in-effect
+  90:9   error  'handleSocialLogin' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\pages\OAuthCallback.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\pages\Profile.jsx
+   1:8   error    'React' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             no-unused-vars
+  27:23  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+  25 |   });
+  26 |
+> 27 |   const newPassword = watch("newPassword") || "";
+     |                       ^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  28 |
+  29 |   const commonWeak = ["password123", "admin123", "qwerty123", "12345678"];
+  30 |   const requirements = [  react-hooks/incompatible-library
+
+D:\Projects\ATS_KIRO\frontend\src\pages\Register.jsx
+   1:8   error    'React' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 no-unused-vars
+  25:20  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+  23 |
+  24 |   // Watch password field to check alignment with confirm password
+> 25 |   const password = watch("password") || "";
+     |                    ^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  26 |
+  27 |   const commonWeak = ["password123", "admin123", "qwerty123", "12345678"];
+  28 |   const requirements = [  react-hooks/incompatible-library
+
+D:\Projects\ATS_KIRO\frontend\src\pages\ResumeUpload.jsx
+   1:8   error  'React' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
+  38:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  36 |
+  37 |   useEffect(() => {
+> 38 |     fetchResumes();
+     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  39 |   }, []);
+  40 |
+  41 |   const handleUpload = async (file) => {  react-hooks/set-state-in-effect
+  80:14  error  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     no-unused-vars
+
+D:\Projects\ATS_KIRO\frontend\src\routes\ProtectedRoute.jsx
+  1:8  error  'React' is defined but never used  no-unused-vars
+
+Γ£û 52 problems (48 errors, 4 warnings)
+
