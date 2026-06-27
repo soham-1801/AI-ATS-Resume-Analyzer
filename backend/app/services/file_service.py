@@ -77,14 +77,7 @@ class FileService:
         
         # Clean and create a secure, unique filename
         ext = file.filename.rsplit(".", 1)[-1].lower()
-        unique_id = uuid.uuid4().hex[:12]
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        
-        # Strip spaces and special chars from name
-        base_name = os.path.basename(file.filename).rsplit(".", 1)[0]
-        sanitized_base = "".join(c for c in base_name if c.isalnum() or c in ("-", "_")).strip()
-        
-        unique_filename = f"{timestamp}_{unique_id}_{sanitized_base}.{ext}"
+        unique_filename = f"{uuid.uuid4().hex}.{ext}"
         file_path = os.path.join(UPLOAD_DIR, unique_filename)
         
         # Save file to uploads/resumes/
@@ -92,7 +85,7 @@ class FileService:
             with open(file_path, "wb") as f:
                 content = file.file.read()
                 f.write(content)
-        except Exception as e:
+        except OSError as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to write file to storage: {str(e)}"

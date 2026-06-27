@@ -9,6 +9,6 @@ ALLOWED_EXTENSIONS = {"pdf", "docx", "txt"}
 MAX_FILE_SIZE_MB = 10
 
 # Security
-SECRET_KEY = os.getenv("SECRET_KEY", "super_secret_ats_key_for_development")
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30

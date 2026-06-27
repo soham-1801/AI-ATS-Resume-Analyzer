@@ -9,6 +9,7 @@ from app.services.auth_service import AuthService
 from app.services.oauth_service import OAuthService
 from app.utils.security import create_access_token, decode_access_token, verify_password, get_password_hash, validate_password_strength, create_refresh_token, decode_refresh_token
 from pydantic import BaseModel, EmailStr
+from urllib.parse import urlparse
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -78,14 +79,32 @@ def refresh_token(request: RefreshRequest, db: Session = Depends(get_db)):
 @router.post("/oauth", response_model=Token)
 def oauth_login(request: OAuthLoginRequest, db: Session = Depends(get_db)):
     """Endpoint for Google, GitHub, or Apple Social Login."""
+    if not request.provider or not str(request.provider).strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="provider is required")
+    if request.provider not in ("google", "github", "apple"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OAuth provider")
+    if not request.oauth_id or not str(request.oauth_id).strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="oauth_id is required")
+
     user = AuthService.authenticate_or_create_oauth_user(db, request)
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
+def validate_redirect_uri(uri: str | None):
+    if uri:
+        parsed = urlparse(uri)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid redirect_uri")
+
 @router.post("/oauth/google", response_model=Token)
 def oauth_google_login(request: OAuthCodeExchangeRequest, db: Session = Depends(get_db)):
     """Exchange Google auth code for a valid access/refresh JWT token."""
+    if not request.code or not str(request.code).strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="code is required")
+    if not request.redirect_uri or not str(request.redirect_uri).strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="redirect_uri is required")
+    validate_redirect_uri(request.redirect_uri)
     profile = OAuthService.exchange_google_code(request.code, request.redirect_uri)
     oauth_request = OAuthLoginRequest(
         provider="google",
@@ -101,6 +120,9 @@ def oauth_google_login(request: OAuthCodeExchangeRequest, db: Session = Depends(
 @router.post("/oauth/github", response_model=Token)
 def oauth_github_login(request: OAuthCodeExchangeRequest, db: Session = Depends(get_db)):
     """Exchange GitHub auth code for a valid access/refresh JWT token."""
+    if not request.code or not str(request.code).strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="code is required")
+    validate_redirect_uri(request.redirect_uri)
     profile = OAuthService.exchange_github_code(request.code, request.redirect_uri)
     oauth_request = OAuthLoginRequest(
         provider="github",
@@ -118,6 +140,8 @@ def oauth_apple_login(request: OAuthCodeExchangeRequest, db: Session = Depends(g
     """Validate Apple ID token and exchange for access/refresh JWT token."""
     # Frontends send id_token, and optionally code
     id_token = request.id_token or request.code
+    if not id_token or not str(id_token).strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="id_token or code is required")
     profile = OAuthService.verify_apple_token(id_token, request.code)
     oauth_request = OAuthLoginRequest(
         provider="apple",
@@ -183,8 +207,7 @@ def reset_password_request(
     """Endpoint to request a password reset token."""
     token = AuthService.request_password_reset(db, request_data.email)
     return {
-        "message": "If this email is registered, a reset code has been sent.",
-        "debug_token": token
+        "message": "If this email is registered, a reset code has been sent."
     }
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)

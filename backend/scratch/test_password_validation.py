@@ -1,6 +1,7 @@
 import sys
 import os
 import unittest
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 # Add parent directory of 'app' to Python path
@@ -134,13 +135,15 @@ class TestPasswordValidation(unittest.TestCase):
             "password": "Password123!"
         })
 
-        # Request password reset
-        req_res = self.client.post("/api/auth/reset-password-request", json={
-            "email": "test_strength@example.com"
-        })
-        self.assertEqual(req_res.status_code, 200)
-        self.assertIn("debug_token", req_res.json())
-        token = req_res.json()["debug_token"]
+        # Request password reset with mock to capture the token
+        mock_token = "mock_secure_token_12345"
+        with patch('secrets.token_urlsafe', return_value=mock_token):
+            req_res = self.client.post("/api/auth/reset-password-request", json={
+                "email": "test_strength@example.com"
+            })
+            self.assertEqual(req_res.status_code, 200)
+
+        token = mock_token
 
         # Confirm password reset with weak password
         conf_res = self.client.post("/api/auth/reset-password", json={

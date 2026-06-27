@@ -2,6 +2,7 @@ import os
 import logging
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from app.database.connection import get_db
 from app.models.user import User
 from app.models.resume import Resume
@@ -52,12 +53,12 @@ async def upload_resume(
         logger.error(f"[RESUME UPLOAD] Validation failure for {file.filename}: {he.detail}")
         raise he
         
-    except Exception as e:
+    except ValueError as e:
         # Cleanup uploaded file if parsing fails
         if file_path and os.path.exists(file_path):
             try:
                 os.remove(file_path)
-            except Exception as cleanup_err:
+            except OSError as cleanup_err:
                 print(f"[RESUME UPLOAD] Error cleaning up file: {cleanup_err}")
                 
         error_msg = str(e)
@@ -80,15 +81,28 @@ async def upload_resume(
         )
 
     # 3. Save Resume record in database
-    db_resume = Resume(
-        user_id=current_user.id,
-        file_name=unique_filename,
-        file_path=file_path,
-        parsed_text=parsed_text
-    )
-    db.add(db_resume)
-    db.commit()
-    db.refresh(db_resume)
+    try:
+        db_resume = Resume(
+            user_id=current_user.id,
+            file_name=unique_filename,
+            file_path=file_path,
+            parsed_text=parsed_text
+        )
+        db.add(db_resume)
+        db.commit()
+        db.refresh(db_resume)
+    except Exception as db_err:
+        db.rollback()
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except OSError:
+                pass
+        logger.error(f"[RESUME UPLOAD] Database error for {file.filename}: {db_err}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database transaction failed during resume save."
+        )
 
     return db_resume
 
@@ -133,7 +147,7 @@ def delete_resume(
     if os.path.exists(resume.file_path):
         try:
             os.remove(resume.file_path)
-        except Exception as e:
+        except OSError as e:
             print(f"Error removing file from storage: {e}")
             
     db.delete(resume)
