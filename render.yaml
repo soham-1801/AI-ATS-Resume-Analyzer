@@ -2,26 +2,34 @@ services:
   - type: web
     name: ai-resume-ats-backend
     env: python
-    plan: standard
-    buildCommand: "cd backend && pip install -r ../requirements.txt && python -m spacy download en_core_web_sm"
-    startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    plan: free
+
+    buildCommand: cd backend && pip install -r ../requirements.txt
+
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
     envVars:
       - key: DATABASE_URL
         fromDatabase:
           name: ai-resume-ats-db
           property: connectionString
+
       - key: GEMINI_API_KEY
-        sync: false # User will input their Gemini API key in Render Dashboard
+        sync: false
+
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://your-frontend-domain.vercel.app,http://localhost:5173" # Update with Vercel URL
+        value: "https://your-frontend-domain.vercel.app,http://localhost:5173"
+
       - key: SECRET_KEY
-        generateValue: true # Render will generate a random secure token
+        generateValue: true
+
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "60"
+
     disk:
       name: uploads-disk
       mountPath: /opt/render/project/src/backend/uploads
-      sizeGB: 10 # Mounts a persistent disk to preserve resume files across redeploys
+      sizeGB: 10
 
 databases:
   - name: ai-resume-ats-db
