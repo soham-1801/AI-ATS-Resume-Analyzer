@@ -36,8 +36,8 @@ def analyze_resume(
     payload_dict = {"resume_id": request.resume_id,
                     "job_description_id": request.job_description_id}
     print(
-        f"[ATS ANALYSIS] Request received. Payload: {payload_dict}, User: {
-            current_user.email}")
+        f"[ATS ANALYSIS] Request received. Payload: {payload_dict}, User: {current_user.email}"
+    )
     print(f"[ATS ANALYSIS] Selected Resume ID: {request.resume_id}")
 
     # 1. Load resume and check permissions
@@ -46,8 +46,8 @@ def analyze_resume(
         Resume.user_id == current_user.id).first()
     if not resume:
         print(
-            f"[ATS ANALYSIS] Error: Resume ID {
-                request.resume_id} not found or access denied.")
+            f"[ATS ANALYSIS] Error: Resume ID {request.resume_id} not found or access denied."
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Resume not found or access denied."
@@ -56,9 +56,8 @@ def analyze_resume(
     # 2. Check if text is present. If missing, attempt automatic re-parsing
     if not resume.parsed_text or not resume.parsed_text.strip():
         print(
-            f"[ATS ANALYSIS] Warning: Resume {
-                resume.id} parsed_text is empty. Attempting automatic re-parsing from path: {
-                resume.file_path}")
+            f"[ATS ANALYSIS] Warning: Resume {resume.id} parsed_text is empty. Attempting automatic re-parsing from path: {resume.file_path}"
+        )
         try:
             parsed_text = ResumeParser.parse(resume.file_path)
             if parsed_text and parsed_text.strip():
@@ -66,9 +65,8 @@ def analyze_resume(
                 db.commit()
                 db.refresh(resume)
                 print(
-                    f"[ATS ANALYSIS] Success: Automatically re-parsed resume {
-                        resume.id}. Length: {
-                        len(parsed_text)} characters.")
+                    f"[ATS ANALYSIS] Success: Automatically re-parsed resume {resume.id}. Length: {len(parsed_text)} characters."
+                )
             else:
                 raise ValueError(
                     "Parsed file has no extractable text. It may be empty or a scanned PDF (image-only).")
@@ -77,8 +75,8 @@ def analyze_resume(
                 f"[ATS ANALYSIS] Automatic re-parsing failed for Resume {resume.id}: {e}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Resume text has not been parsed or is empty. Scanned PDFs are not supported. Error: {
-                    str(e)}")
+                detail=f"Resume text has not been parsed or is empty. Scanned PDFs are not supported. Error: {str(e)}"
+            )
 
     # 2. Load job description and check permissions
     jd = db.query(JobDescription).filter(
@@ -101,8 +99,8 @@ def analyze_resume(
     print(
         f"[ATS ANALYSIS] Starting ATS analysis. Resume character count: {char_count}")
     logger.info(
-        f"[ATS ANALYSIS] Starting ATS analysis for Resume ID {
-            resume.id}. Extracted resume character count: {char_count}")
+        f"[ATS ANALYSIS] Starting ATS analysis for Resume ID {resume.id}. Extracted resume character count: {char_count}"
+    )
 
     # 3. Calculate match metrics using ATSEngine
     match_data = ATSEngine.calculate_match(resume.parsed_text, jd.description)
@@ -225,8 +223,8 @@ def get_pdf_report(
     Protected by JWT.
     """
     print(
-        f"[PDF REPORT] Request received for result ID: {result_id}. User: {
-            current_user.email}")
+        f"[PDF REPORT] Request received for result ID: {result_id}. User: {current_user.email}"
+    )
 
     # 1. Fetch the ATSResult record
     result = db.query(ATSResult).filter(ATSResult.id == result_id).first()
@@ -244,9 +242,8 @@ def get_pdf_report(
         Resume.user_id == current_user.id).first()
     if not resume:
         print(
-            f"[PDF REPORT] Access Denied: User {
-                current_user.email} does not own resume ID {
-                result.resume_id} linked to result ID {result_id}")
+            f"[PDF REPORT] Access Denied: User {current_user.email} does not own resume ID {result.resume_id} linked to result ID {result_id}"
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied or resume not owned by current user."
@@ -257,8 +254,8 @@ def get_pdf_report(
         JobDescription.id == result.jd_id).first()
     jd_desc = jd.description if jd else ""
     print(
-        f"[PDF REPORT] Loaded Job Description ID: {
-            result.jd_id if jd else 'N/A'}")
+        f"[PDF REPORT] Loaded Job Description ID: {result.jd_id if jd else 'N/A'}"
+    )
 
     # 4. Compute scores dynamically using ATSEngine to retrieve Keyword and
     # Semantic scores
@@ -285,19 +282,15 @@ def get_pdf_report(
         ms_skills = []
 
     print(
-        f"[PDF REPORT] Generating PDF byte stream. Candidate: {
-            current_user.name}, Keyword Score: {
-            match_data.get('keyword_score')}, Semantic Score: {
-                match_data.get('semantic_score')}, Final Score: {
-                    result.ats_score}")
+        f"[PDF REPORT] Generating PDF byte stream. Candidate: {current_user.name}, Keyword Score: {match_data.get('keyword_score')}, Semantic Score: {match_data.get('semantic_score')}, Final Score: {result.ats_score}"
+    )
 
     # 6. Generate PDF byte stream
     try:
         pdf_buffer = PDFGenerator.generate_report(
             candidate_name=current_user.name,
             candidate_email=current_user.email,
-            job_title="Target Position Specification" if not jd else f"Target Job Profile (ID: {
-                jd.id})",
+            job_title="Target Position Specification" if not jd else f"Target Job Profile (ID: {jd.id})",
             upload_date=result.created_at,
             keyword_score=match_data.get(
                 "keyword_score",

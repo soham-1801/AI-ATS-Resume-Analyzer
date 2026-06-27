@@ -47,7 +47,7 @@ narwhals==2.18.0
 nest-asyncio==1.6.0
 networkx==3.6.1
 nltk==3.9.2
-numpy==2.4.0
+numpy
 packaging==25.0
 pandas==2.3.3
 parso==0.8.5
@@ -107,9 +107,12 @@ python-jose[cryptography]==3.3.0
 python-multipart==0.0.9
 pdfplumber==0.11.0
 python-docx==1.1.0
-spacy==3.7.4
+spacy>=3.8.0
 google-genai
 reportlab==4.1.0
-psycopg2-binary==2.9.9
+psycopg2-binary
 python-dotenv==1.0.1
 docx2txt==0.9
+slowapi
+alembic
+pytest

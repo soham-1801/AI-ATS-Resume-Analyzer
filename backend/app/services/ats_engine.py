@@ -694,11 +694,7 @@ class ATSEngine:
 
         # Keywords Impact Analysis
         if missing_skills:
-            keywords_impact = f"Your resume currently misses key technologies such as {
-                ', '.join(
-                    sorted(
-                        list(missing_skills))[
-                        :3])}. Injecting these missing keywords will directly optimize your search ranking density, which controls 60% of search indexing weights in modern ATS filters."
+            keywords_impact = f"Your resume currently misses key technologies such as {', '.join(sorted(list(missing_skills))[:3])}. Injecting these missing keywords will directly optimize your search ranking density, which controls 60% of search indexing weights in modern ATS filters."
         else:
             keywords_impact = "No critical missing keywords. Keyword density is in the optimal range."
 
@@ -815,11 +811,7 @@ class ATSEngine:
                 {
                     "title": "Inject Missing Technical Keywords",
                     "impact": "High" if gain_keywords >= 10 else "Medium",
-                    "description": f"Add missing keywords: {
-                        ', '.join(
-                            sorted(
-                                list(missing_skills))[
-                                :3])} to skills and experience sections.",
+                    "description": f"Add missing keywords: {', '.join(sorted(list(missing_skills))[:3])} to skills and experience sections.",
                     "points_recovery": round(
                         gain_keywords,
                         1)})
@@ -883,9 +875,7 @@ class ATSEngine:
                 f"Improve ATS Compatibility by {int(round(80.0 - ats_compatibility_score))}%")
         if missing_skills:
             improvement_summary.append(
-                f"Add {
-                    len(missing_skills)} missing skill{
-                    's' if len(missing_skills) > 1 else ''}")
+                f"Add {len(missing_skills)} missing skill{'s' if len(missing_skills) > 1 else ''}")
         if content_quality_score < 80:
             improvement_summary.append("Strengthen project descriptions")
 
