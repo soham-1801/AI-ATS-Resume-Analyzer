@@ -56,7 +56,18 @@ const ResumeUpload = () => {
       setSuccess("Resume uploaded and parsed successfully!");
       await fetchResumes();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to upload and parse file.");
+      console.error("Upload error details:", err, err.response);
+      let errorMsg = "Failed to upload and parse file.";
+      if (err.response?.data?.detail) {
+        errorMsg = typeof err.response.data.detail === 'string' 
+          ? err.response.data.detail 
+          : JSON.stringify(err.response.data.detail);
+      } else if (err.response?.data?.message) {
+        errorMsg = err.response.data.message;
+      } else if (err.message) {
+        errorMsg = `Network/Client Error: ${err.message}`;
+      }
+      setError(errorMsg);
     } finally {
       setUploading(false);
       setUploadProgress(0);

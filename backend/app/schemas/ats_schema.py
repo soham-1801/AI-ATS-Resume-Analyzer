@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, ConfigDict
 from datetime import datetime
+import json
 
 class ATSAnalyzeRequest(BaseModel):
     resume_id: int
@@ -82,9 +83,17 @@ class ATSResultResponse(BaseModel):
     suggestions: str | None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
-        
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_validator('matched_skills', 'missing_skills', mode='before')
+    @classmethod
+    def parse_skills(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except Exception:
+                return []
+        return v or []
 class DashboardStats(BaseModel):
     total_resumes: int
     total_matches: int

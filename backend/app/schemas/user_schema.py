@@ -1,12 +1,12 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from datetime import datetime
 
 class UserBase(BaseModel):
     email: EmailStr
 
 class UserCreate(UserBase):
-    name: str
-    password: str
+    name: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=8)
 
 class UserResponse(UserBase):
     id: int
@@ -15,5 +15,4 @@ class UserResponse(UserBase):
     oauth_id: str | None = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

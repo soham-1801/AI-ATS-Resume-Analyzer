@@ -1,8 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 
 class JobDescriptionBase(BaseModel):
-    description: str
+    description: str = Field(..., min_length=10)
 
 class JobDescriptionCreate(JobDescriptionBase):
     pass
@@ -12,5 +12,4 @@ class JobDescriptionResponse(JobDescriptionBase):
     user_id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

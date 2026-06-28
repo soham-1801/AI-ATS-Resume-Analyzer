@@ -2,7 +2,6 @@ import os
 import uuid
 import logging
 from fastapi import UploadFile, HTTPException, status
-from datetime import datetime, timezone
 
 # Configure logger
 logger = logging.getLogger("ats.file_service")
@@ -11,11 +10,13 @@ logger = logging.getLogger("ats.file_service")
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads", "resumes")
 
-ALLOWED_EXTENSIONS = {"pdf", "doc", "docx"}
+ALLOWED_EXTENSIONS = {"pdf", "docx", "txt", "jpg", "jpeg", "png"}
 ALLOWED_MIME_TYPES = {
     "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    "text/plain",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "image/jpeg",
+    "image/png"
 }
 MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 Megabytes
 
@@ -33,7 +34,7 @@ class FileService:
             
         ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
         if ext not in ALLOWED_EXTENSIONS:
-            err_msg = "Unsupported file type. Only PDF, DOC, and DOCX files are allowed."
+            err_msg = "Unsupported file type. Only PDF, DOCX, TXT, JPG, and PNG files are allowed."
             logger.error(f"[UPLOAD VALIDATION] File '{file.filename}' extension '{ext}' not allowed. {err_msg}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -50,11 +51,17 @@ class FileService:
             )
 
         # 3. Validate File Size
-        # Seek end of file to read length, then reset cursor position
-        file.file.seek(0, os.SEEK_END)
-        size = file.file.tell()
-        file.file.seek(0)
+        # Use native size attribute available in FastAPI >= 0.100.0
+        size = getattr(file, 'size', 0)
         
+        if size == 0:
+            err_msg = "File is empty."
+            logger.error(f"[UPLOAD VALIDATION] File '{file.filename}' is empty. {err_msg}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=err_msg
+            )
+            
         if size > MAX_FILE_SIZE_BYTES:
             err_msg = "File exceeds maximum allowed size of 5MB."
             logger.error(f"[UPLOAD VALIDATION] File '{file.filename}' size ({size} bytes) exceeds limit. {err_msg}")
@@ -92,3 +99,13 @@ class FileService:
             )
             
         return unique_filename, file_path
+
+    @staticmethod
+    def delete_file(file_path: str):
+        """Removes the file from local storage to clean up resources."""
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                logger.info(f"[FILE_SERVICE] Cleaned up file: {file_path}")
+            except Exception as e:
+                logger.error(f"[FILE_SERVICE] Failed to delete file {file_path}: {e}")

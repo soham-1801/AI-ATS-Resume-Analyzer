@@ -1,8 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 
 class ResumeBase(BaseModel):
-    file_name: str
+    file_name: str = Field(..., min_length=1)
 
 class ResumeResponse(ResumeBase):
     id: int
@@ -11,8 +11,7 @@ class ResumeResponse(ResumeBase):
     upload_date: datetime
     parsed_text: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ResumeParseDetails(BaseModel):
     resume_id: int

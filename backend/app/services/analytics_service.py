@@ -1,11 +1,14 @@
 import json
 from collections import Counter
+import logging
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.models.resume import Resume
 from app.models.ats_result import ATSResult
 from app.models.job_description import JobDescription
 from app.schemas.dashboard_schema import DashboardAnalyticsResponse, SkillFrequency, ScoreHistoryItem, ScoreDistribution
+
+logger = logging.getLogger(__name__)
 
 class AnalyticsService:
     @staticmethod
@@ -28,9 +31,12 @@ class AnalyticsService:
             func.min(ATSResult.ats_score)
         ).join(Resume).filter(Resume.user_id == user_id).first()
 
-        avg_score = round(score_stats[0], 1) if score_stats[0] is not None else 0.0
-        highest_score = round(score_stats[1], 1) if score_stats[1] is not None else 0.0
-        lowest_score = round(score_stats[2], 1) if score_stats[2] is not None else 0.0
+        if score_stats:
+            avg_score = round(score_stats[0], 1) if score_stats[0] is not None else 0.0
+            highest_score = round(score_stats[1], 1) if score_stats[1] is not None else 0.0
+            lowest_score = round(score_stats[2], 1) if score_stats[2] is not None else 0.0
+        else:
+            avg_score = highest_score = lowest_score = 0.0
 
         # 4. Aggregate Top Skills matched across all analyses
         matched_results = db.query(ATSResult.matched_skills).join(Resume).filter(Resume.user_id == user_id).all()
@@ -42,8 +48,8 @@ class AnalyticsService:
                     skills_list = json.loads(row[0])
                     if isinstance(skills_list, list):
                         skill_counter.update(skills_list)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Failed to parse skills JSON: {e}", exc_info=True)
 
         # Sort and select top 10 skills
         top_skills = [
@@ -76,7 +82,7 @@ class AnalyticsService:
 
         score_history = []
         for record in history_records:
-            date_str = record[1].strftime("%b %d")
+            date_str = record[1].strftime("%b %d") if record[1] else "Unknown"
             score_history.append(
                 ScoreHistoryItem(
                     id=record[3],

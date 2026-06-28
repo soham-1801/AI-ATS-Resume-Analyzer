@@ -23,6 +23,73 @@ def get_nlp_model():
 
 class ATSEngine:
     @staticmethod
+    def extract_name(resume_text: str, fallback_name: str) -> str:
+        """Extracts candidate name from the top of the resume using heuristics and NER."""
+        if not resume_text or not resume_text.strip():
+            return fallback_name
+            
+        # 1. Primary Heuristic: First reasonable line (highly accurate for resumes)
+        try:
+            lines = [line.strip() for line in resume_text[:500].split('\n') if line.strip()]
+            invalid_words = ["resume", "curriculum", "cv", "email", "phone", "mobile", "address", "page", "contact"]
+            for line in lines:
+                # Clean markdown characters that might interfere
+                clean_line = line.replace('*', '').replace('_', '').replace('#', '').strip()
+                if not clean_line:
+                    continue
+                if any(kw in clean_line.lower() for kw in invalid_words) or "@" in clean_line or sum(c.isdigit() for c in clean_line) > 0:
+                    continue
+                words = clean_line.split()
+                if 1 <= len(words) <= 5:
+                    return clean_line.title()
+        except Exception as e:
+            print(f"Name extraction heuristic error: {e}")
+
+        # 2. Fallback to NER if heuristic fails
+        try:
+            nlp = get_nlp_model()
+            
+            # Try NER on original text
+            doc = nlp(resume_text[:500])
+            for ent in doc.ents:
+                if ent.label_ == "PERSON":
+                    clean_name = ent.text.strip().split('\n')[0].title()
+                    if 2 <= len(clean_name) <= 40 and clean_name.lower() not in ["resume", "curriculum vitae", "cv"]:
+                        return clean_name
+                        
+            # Try NER on title-cased text
+            doc_title = nlp(resume_text[:500].title())
+            for ent in doc_title.ents:
+                if ent.label_ == "PERSON":
+                    clean_name = ent.text.strip().split('\n')[0].title()
+                    if 2 <= len(clean_name) <= 40 and clean_name.lower() not in ["resume", "curriculum vitae", "cv"]:
+                        return clean_name
+        except Exception as e:
+            print(f"Name extraction NER error: {e}")
+            
+        return fallback_name
+
+    @staticmethod
+    def extract_email(resume_text: str, fallback_email: str) -> str:
+        """Extracts candidate email from the resume using regex."""
+        if not resume_text or not resume_text.strip():
+            return fallback_email
+            
+        import re
+        # Standard email regex pattern
+        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+        
+        try:
+            # Search in the entire document
+            match = re.search(email_pattern, resume_text)
+            if match:
+                return match.group(0).lower()
+        except Exception as e:
+            print(f"Email extraction error: {e}")
+            
+        return fallback_email
+
+    @staticmethod
     def calculate_match(resume_text: str, job_description: str) -> dict:
         """
         Calculates NLP-based alignment metrics:
@@ -76,10 +143,10 @@ class ATSEngine:
                 [resume_text, job_description])
             cos_sim = cosine_similarity(
                 tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-            tfidf_keyword_score = round(max(0.0, min(100.0, cos_sim * 100)), 1)
+            round(max(0.0, min(100.0, cos_sim * 100)), 1)
         except Exception as e:
             print(f"Error computing TF-IDF Cosine Similarity: {e}")
-            tfidf_keyword_score = 0.0
+            pass
 
         # 2. spaCy Document Similarity for Semantic Score
         try:
@@ -213,7 +280,7 @@ class ATSEngine:
                 kw) or line_clean.endswith(kw) for kw in section_keywords)
 
         def ends_with_bullet(page_text):
-            lines = [l.strip() for l in page_text.split("\n") if l.strip()]
+            lines = [line.strip() for line in page_text.split("\n") if line.strip()]
             if not lines:
                 return False
             last_line = lines[-1]
@@ -225,7 +292,7 @@ class ATSEngine:
             return starts_with_bullet and ends_open
 
         def starts_with_continuation(page_text):
-            lines = [l.strip() for l in page_text.split("\n") if l.strip()]
+            lines = [line.strip() for line in page_text.split("\n") if line.strip()]
             if not lines:
                 return False
             first_line = lines[0]
@@ -244,10 +311,10 @@ class ATSEngine:
             resume_text) is not None
         has_email_phone = has_email or has_phone
         has_linkedin = "linkedin" in resume_lower
-        has_summary = any(x in resume_lower for x in summary_keywords)
-        has_education = any(x in resume_lower for x in education_keywords)
-        has_experience = any(x in resume_lower for x in experience_keywords)
-        has_skills = any(x in resume_lower for x in skills_keywords)
+        has_summary = any(re.search(rf"\b{re.escape(x)}\b", resume_lower) for x in summary_keywords)
+        has_education = any(re.search(rf"\b{re.escape(x)}\b", resume_lower) for x in education_keywords)
+        has_experience = any(re.search(rf"\b{re.escape(x)}\b", resume_lower) for x in experience_keywords)
+        has_skills = any(re.search(rf"\b{re.escape(x)}\b", resume_lower) for x in skills_keywords)
         has_structure = any(
             b in resume_text for b in [
                 "-", "*", "•", "▪", "◦"])
@@ -296,8 +363,8 @@ class ATSEngine:
         # Advanced formatting checks
         if len(pages) > 1:
             for p in range(len(pages) - 1):
-                page_lines = [l.strip()
-                              for l in pages[p].split("\n") if l.strip()]
+                page_lines = [line.strip()
+                              for line in pages[p].split("\n") if line.strip()]
                 if page_lines:
                     last_line = page_lines[-1]
                     if is_heading(last_line):
@@ -435,7 +502,7 @@ class ATSEngine:
             "architected",
             "formulated",
             "established"]
-        found_verbs = [v for v in active_verbs if v in resume_lower]
+        found_verbs = [v for v in active_verbs if re.search(rf"\b{v}\b", resume_lower)]
         active_verbs_score = min(40, len(found_verbs) * 8)
 
         # Quantified Achievements Present = +30 (min 3 metrics, or +10 per
@@ -445,16 +512,8 @@ class ATSEngine:
             resume_text)
         quantified_score = min(30, len(metrics) * 10)
 
-        # Project Descriptions Present = +30 (if contains project keywords)
-        has_proj_kws = any(
-            x in resume_lower for x in [
-                "project",
-                "developed",
-                "built",
-                "engineered",
-                "design",
-                "github.com",
-                "portfolio"])
+        proj_kws = ["project", "developed", "built", "engineered", "design", "github.com", "portfolio"]
+        has_proj_kws = any(re.search(rf"\b{re.escape(x)}\b", resume_lower) for x in proj_kws)
         projects_score = 30 if has_proj_kws else 0
 
         content_quality_score = active_verbs_score + quantified_score + projects_score
@@ -749,15 +808,15 @@ class ATSEngine:
             gain_validation +
             gain_compatibility,
             1)
-        projected_score = min(95.0, round(final_score + recoverable_ats, 1))
+        projected_score = min(100.0, max(final_score, round(final_score + recoverable_ats, 1)))
 
         # Missing Skills Impact Analysis
         missing_skills_impact = []
         total_skills_impact_gain = 0.0
         if missing_skills:
             each_impact = round(gain_keywords / len(missing_skills), 1)
-            if each_impact == 0 and keyword_score < 95.0:
-                each_impact = 1.0
+            if each_impact == 0.0 and gain_keywords > 0:
+                each_impact = 0.1
             for skill in sorted(list(missing_skills)):
                 missing_skills_impact.append({
                     "skill": skill,
@@ -852,8 +911,8 @@ class ATSEngine:
         f_min = round(sum(max(80.0, S) * W for S, W in cats) - 2.0)
         f_max = round(
             sum(max(85.0, S + (100.0 - S) * 0.5) * W for S, W in cats))
-        future_min = max(int(final_score), int(f_min))
-        future_max = max(future_min + 5, min(95, int(f_max)))
+        future_min = min(100, max(int(final_score), int(f_min)))
+        future_max = min(100, max(future_min + 2, int(f_max)))
         estimated_future = f"{future_min}% - {future_max}%"
 
         # Generate "How to Reach 80% ATS Score" improvement summary
@@ -880,17 +939,18 @@ class ATSEngine:
             improvement_summary.append("Strengthen project descriptions")
 
         # Section detection logic
+        contact_kws = ["contact", "email", "phone", "address"]
+        cert_kws = ["certification", "certifications", "certified", "award", "awards", "credentials"]
+        
         sections_map = {
-            "Contact Information": has_email_phone or any(
-                x in resume_lower for x in [
-                    "contact", "email", "phone", "address"]), "Professional Summary": any(
-                x in resume_lower for x in summary_keywords), "Work Experience": any(
-                    x in resume_lower for x in experience_keywords), "Education": any(
-                        x in resume_lower for x in education_keywords), "Skills / Technical Expertise": any(
-                            x in resume_lower for x in skills_keywords), "Projects": any(
-                                x in resume_lower for x in projects_keywords), "Certifications & Awards": any(
-                                    x in resume_lower for x in [
-                                        "certification", "certifications", "certified", "award", "awards", "credentials"])}
+            "Contact Information": has_email_phone or any(re.search(rf"\b{re.escape(x)}\b", resume_lower) for x in contact_kws),
+            "Professional Summary": has_summary,
+            "Work Experience": has_experience,
+            "Education": has_education,
+            "Skills / Technical Expertise": has_skills,
+            "Projects": has_proj_kws,
+            "Certifications & Awards": any(re.search(rf"\b{re.escape(x)}\b", resume_lower) for x in cert_kws)
+        }
         found_sections = [sec for sec, found in sections_map.items() if found]
         missing_sections = [
             sec for sec,

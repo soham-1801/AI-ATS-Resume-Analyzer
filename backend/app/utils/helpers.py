@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime, timezone
 from app.utils.constants import ALLOWED_EXTENSIONS
 
@@ -10,6 +11,9 @@ def get_timestamp_string() -> str:
     """Generate a clean timestamp string for file names."""
     return datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
+
+
 def sanitize_filename(filename: str) -> str:
     """Basic filename sanitization."""
-    return os.path.basename(filename).replace(" ", "_")
+    base = os.path.basename(filename).replace(" ", "_")
+    return re.sub(r'[^a-zA-Z0-9_.-]', '', base)

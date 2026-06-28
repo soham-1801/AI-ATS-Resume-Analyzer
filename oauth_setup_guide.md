@@ -1,6 +1,6 @@
 # Social Authentication Integration & Setup Guide
 
-This guide describes how to configure Google OAuth, GitHub OAuth, and Apple Sign In for this AI Resume ATS application.
+This guide describes how to configure Google OAuth, and GitHub OAuth for this AI Resume ATS application.
 
 ---
 
@@ -30,15 +30,14 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
 
-# Apple Sign In
-APPLE_CLIENT_ID=your_apple_services_id
+
 ```
 
 ### Frontend `.env`
 ```env
 VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 VITE_GITHUB_CLIENT_ID=your_github_client_id
-VITE_APPLE_CLIENT_ID=your_apple_services_id
+
 ```
 
 ---
@@ -72,17 +71,7 @@ VITE_APPLE_CLIENT_ID=your_apple_services_id
 6. Click **Generate a new client secret** and copy it immediately.
 7. Add both to your env files.
 
-### C. Apple Sign-in Setup
-1. Register with the [Apple Developer Program](https://developer.apple.com/).
-2. In the Certificates, Identifiers & Profiles section:
-   - Create an **App ID** representing your application. Make sure to check **Sign In with Apple** capability.
-   - Create a **Services ID** representing your web client.
-     - Associate the Services ID with your App ID.
-     - Configure the Services ID domain and redirect URL:
-       - **Domains**: `localhost` (or your production domain)
-       - **Return URLs**: `https://yourdomain.com/oauth/callback/apple` (Note: Apple requires `https` for redirect URIs in production).
-3. The Services ID will act as the `VITE_APPLE_CLIENT_ID` / `APPLE_CLIENT_ID`.
-4. Add the Services ID to your env files.
+
 
 ---
 
@@ -134,4 +123,4 @@ sequenceDiagram
 - **Password Constraints**: For new social registrants, the database `password_hash` column is populated with a cryptographically secure, random 32-character hex string. This satisfies the SQLite `NOT NULL` constraint and secures the account from unauthorized password-based logins.
 - **Access Tokens**: JWT Access tokens are signed using `HS256` with a default expiration of 30 minutes. They contain the user's email as the subject (`sub`) and are sent in the `Authorization: Bearer <token>` header for protected endpoints.
 - **Refresh Tokens**: JWT Refresh tokens are signed similarly, with a default expiration of 7 days, allowing the frontend to silently query `/api/auth/refresh` when access tokens expire.
-- **Provider Integrity Check**: If a user attempts to log in via a provider (e.g., GitHub) using an email that has already registered using a different provider (e.g., Google), the backend returns a `400 Bad Request` explaining `This email is already registered using google.` to prevent account hijacking.
+- **Cross-Provider Seamless Login**: If a user attempts to log in via a provider (e.g., GitHub) using an email that has already registered using a different provider (e.g., Google), the backend securely identifies the user by email and logs them in seamlessly, rather than blocking the attempt. (Note: Password-based accounts are still protected against OAuth auto-linking to prevent account hijacking).

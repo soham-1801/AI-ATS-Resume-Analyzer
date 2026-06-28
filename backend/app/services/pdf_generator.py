@@ -1,19 +1,19 @@
 import io
-import json
+import re
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether, PageBreak, CondPageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 # Define curated colors for premium styling
-PRIMARY_COLOR = colors.HexColor("#1e293b")  # Dark Slate Blue
-SECONDARY_COLOR = colors.HexColor("#3b82f6")  # Bright Blue
-ACCENT_GREEN = colors.HexColor("#10b981")  # Emerald Green
-ACCENT_RED = colors.HexColor("#ef4444")  # Coral Red
-CARD_BG = colors.HexColor("#f8fafc")  # Cool Grey Light Background
-TEXT_COLOR = colors.HexColor("#0f172a")  # Dark Charcoal
+PRIMARY_COLOR = colors.HexColor("#111827")  # Deep Charcoal
+SECONDARY_COLOR = colors.HexColor("#6b7280")  # Soft Gray
+ACCENT_GREEN = colors.HexColor("#059669")  # Clean Green
+ACCENT_RED = colors.HexColor("#dc2626")  # Clean Red
+CARD_BG = colors.HexColor("#ffffff")  # White Background
+TEXT_COLOR = colors.HexColor("#374151")  # Medium Gray
 
 class PDFGenerator:
     @staticmethod
@@ -66,7 +66,7 @@ class PDFGenerator:
             spaceAfter=6
         )
         
-        subtitle_style = ParagraphStyle(
+        ParagraphStyle(
             'ReportSubtitle',
             parent=styles['Normal'],
             fontName='Helvetica',
@@ -114,7 +114,7 @@ class PDFGenerator:
             fontName='Helvetica-Bold'
         )
 
-        breakdown_header_style = ParagraphStyle(
+        ParagraphStyle(
             'BreakdownHeader',
             parent=bold_body_style,
             fontSize=12,
@@ -314,14 +314,14 @@ class PDFGenerator:
         # Helper to create section header with visual separator and increased spacing
         def make_section_header(title: str):
             header_para = Paragraph(title, section_style)
-            line = Table([[""]], colWidths=[7.5 * inch], rowHeights=[1])
+            line = Table([[""]], colWidths=[7.5 * inch], rowHeights=[1.5])
             line.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#cbd5e1")),
+                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#d1d5db")),
                 ('BOTTOMPADDING', (0,0), (-1,-1), 0),
                 ('TOPPADDING', (0,0), (-1,-1), 0),
             ]))
             return KeepTogether([
-                Spacer(1, 28),
+                Spacer(1, 35),
                 header_para,
                 Spacer(1, 6),
                 line,
@@ -436,7 +436,7 @@ class PDFGenerator:
             Spacer(1, 6),
             Paragraph(f"<b>Email:</b> {candidate_email}", details_style),
             Paragraph(f"<b>Target Role:</b> {job_title if job_title else 'Software Engineer'}", details_style),
-            Paragraph(f"<b>Date:</b> {upload_date.strftime('%Y-%m-%d %H:%M UTC')}", details_style),
+            Paragraph(f"<b>Date:</b> {upload_date.strftime('%Y-%m-%d %H:%M UTC') if upload_date else 'Unknown'}", details_style),
         ]
         
         score_style = ParagraphStyle('ScoreVal', fontName='Helvetica-Bold', fontSize=15, leading=18, textColor=PRIMARY_COLOR, alignment=1)
@@ -489,7 +489,7 @@ class PDFGenerator:
         cover_table = Table([[left_content, right_content]], colWidths=[3.8 * inch, 3.7 * inch])
         cover_table.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,-1), CARD_BG),
-            ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#cbd5e1")),
+            ('BOX', (0,0), (-1,-1), 0.25, colors.HexColor("#e5e7eb")),
             ('PADDING', (0,0), (-1,-1), 15),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ]))
@@ -497,6 +497,7 @@ class PDFGenerator:
         story.append(Spacer(1, 15))
 
         # --- Section 2: ATS Intelligence Dashboard (6 Score Cards) ---
+        story.append(CondPageBreak(2.5 * inch))
         story.append(make_section_header("ATS INTELLIGENCE DASHBOARD"))
 
         dashboard_data = [
@@ -522,11 +523,12 @@ class PDFGenerator:
         story.append(Spacer(1, 15))
 
         # --- Section 2.1: Why This Score? ---
+        story.append(CondPageBreak(2.5 * inch))
         story.append(make_section_header("WHY THIS SCORE?"))
         for cat in (category_breakdown or []):
             name_cat = cat.get("name", "")
             score_cat = cat.get("score", 0.0)
-            gain_cat = cat.get("potential_gain", 0.0)
+            cat.get("potential_gain", 0.0)
             issues_cat = cat.get("issues", [])
             recs_cat = cat.get("recommendations", [])
             
@@ -598,7 +600,7 @@ class PDFGenerator:
             cat_card.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,-1), CARD_BG),
                 ('PADDING', (0,0), (-1,-1), 12),
-                ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#cbd5e1")),
+                ('BOX', (0,0), (-1,-1), 0.25, colors.HexColor("#e5e7eb")),
                 ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ]))
             story.append(cat_card)
@@ -607,6 +609,7 @@ class PDFGenerator:
         story.append(Spacer(1, 5))
 
         # --- Section 2.2: Keywords Analysis (Matched vs Missing Table) ---
+        story.append(CondPageBreak(2.5 * inch))
         story.append(make_section_header("KEYWORDS ANALYSIS"))
         matched_str = ", ".join(matched_skills) if matched_skills else "None"
         
@@ -622,7 +625,7 @@ class PDFGenerator:
             card = Table([[content]], colWidths=[3.6 * inch])
             card.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,-1), CARD_BG),
-                ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor("#cbd5e1")),
+                ('BOX', (0,0), (-1,-1), 0.25, colors.HexColor("#e5e7eb")),
                 ('PADDING', (0,0), (-1,-1), 10),
                 ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ]))
@@ -665,7 +668,7 @@ class PDFGenerator:
             card = Table([[content]], colWidths=[3.6 * inch])
             card.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,-1), CARD_BG),
-                ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor("#cbd5e1")),
+                ('BOX', (0,0), (-1,-1), 0.25, colors.HexColor("#e5e7eb")),
                 ('PADDING', (0,0), (-1,-1), 10),
                 ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ]))
@@ -680,6 +683,7 @@ class PDFGenerator:
         story.append(Spacer(1, 15))
 
         # --- Section 2.3: ATS Recovery Calculator (Callout Highlight Style) ---
+        story.append(CondPageBreak(2.5 * inch))
         story.append(make_section_header("ATS RECOVERY CALCULATOR"))
         if intelligence_layer:
             current = intelligence_layer.get("current_score", 0.0)
@@ -788,6 +792,7 @@ class PDFGenerator:
         story.append(Spacer(1, 15))
 
         # --- Section 2.4: Strengths & Weaknesses (2-column layout) ---
+        story.append(CondPageBreak(2.5 * inch))
         story.append(make_section_header("STRENGTHS & WEAKNESSES"))
         if intelligence_layer:
             strengths_list = intelligence_layer.get("strengths", [])
@@ -810,6 +815,7 @@ class PDFGenerator:
         story.append(Spacer(1, 15))
 
         # --- Section 2.5: Recruiter Readiness ---
+        story.append(CondPageBreak(2.5 * inch))
         story.append(make_section_header("RECRUITER READINESS"))
         if intelligence_layer:
             readiness = intelligence_layer.get("readiness_indicator", "Not Interview Ready")
@@ -841,7 +847,7 @@ class PDFGenerator:
                 ('BACKGROUND', (0,0), (-1,-1), CARD_BG),
                 ('PADDING', (0,0), (-1,-1), 8),
                 ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor("#cbd5e1")),
+                ('BOX', (0,0), (-1,-1), 0.25, colors.HexColor("#e5e7eb")),
                 ('INNERGRID', (0,0), (-1,-1), 0.25, colors.HexColor("#cbd5e1")),
             ]))
             story.append(readiness_table)
@@ -850,6 +856,7 @@ class PDFGenerator:
         story.append(Spacer(1, 15))
 
         # --- Section 2.5.1: Resume Section Detection ---
+        story.append(CondPageBreak(2.5 * inch))
         story.append(make_section_header("RESUME SECTION DETECTION"))
         if intelligence_layer:
             found_list = intelligence_layer.get("found_sections", [])
@@ -872,6 +879,7 @@ class PDFGenerator:
         story.append(Spacer(1, 15))
 
         # --- Section 2.5.2: ATS Keyword Coverage ---
+        story.append(CondPageBreak(2.5 * inch))
         story.append(make_section_header("ATS KEYWORD COVERAGE"))
         if intelligence_layer:
             coverage_pct = intelligence_layer.get("keyword_coverage_percentage", 0.0)
@@ -913,7 +921,7 @@ class PDFGenerator:
                 ('BACKGROUND', (0,0), (-1,-1), CARD_BG),
                 ('PADDING', (0,0), (-1,-1), 10),
                 ('VALIGN', (0,0), (-1,-1), 'TOP'),
-                ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor("#cbd5e1")),
+                ('BOX', (0,0), (-1,-1), 0.25, colors.HexColor("#e5e7eb")),
                 ('INNERGRID', (0,0), (-1,-1), 0.25, colors.HexColor("#cbd5e1")),
             ]))
             story.append(cov_table)
@@ -948,7 +956,7 @@ class PDFGenerator:
             fixes_box.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,-1), CARD_BG),
                 ('PADDING', (0,0), (-1,-1), 10),
-                ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor("#cbd5e1")),
+                ('BOX', (0,0), (-1,-1), 0.25, colors.HexColor("#e5e7eb")),
             ]))
             story.append(fixes_box)
             story.append(Spacer(1, 15))
@@ -971,12 +979,13 @@ class PDFGenerator:
             summary_box.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,-1), CARD_BG),
                 ('PADDING', (0,0), (-1,-1), 10),
-                ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor("#cbd5e1")),
+                ('BOX', (0,0), (-1,-1), 0.25, colors.HexColor("#e5e7eb")),
             ]))
             story.append(summary_box)
             story.append(Spacer(1, 15))
 
         # --- Section 2.7: Search Indexing & Semantic Roadmap ---
+        story.append(CondPageBreak(2.5 * inch))
         story.append(make_section_header("ATS SEARCH INDEXING & SEMANTIC ROADMAP"))
         if intelligence_layer:
             kw_impact = intelligence_layer.get("keyword_impact_score", 0.0)
@@ -992,12 +1001,13 @@ class PDFGenerator:
             impact_box.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,-1), CARD_BG),
                 ('PADDING', (0,0), (-1,-1), 10),
-                ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor("#cbd5e1")),
+                ('BOX', (0,0), (-1,-1), 0.25, colors.HexColor("#e5e7eb")),
             ]))
             story.append(impact_box)
             story.append(Spacer(1, 15))
 
         # --- Section 3: Skill Map & Keyword Matches ---
+        story.append(CondPageBreak(2.5 * inch))
         story.append(make_section_header("SKILL MAP & KEYWORD MATCHES"))
         matched_text = ", ".join(matched_skills) if matched_skills else "None"
         missing_text = ", ".join(missing_skills) if missing_skills else "None"
@@ -1018,13 +1028,14 @@ class PDFGenerator:
             ('BACKGROUND', (0,0), (-1,-1), CARD_BG),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ('PADDING', (0,0), (-1,-1), 10),
-            ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor("#cbd5e1")),
+            ('BOX', (0,0), (-1,-1), 0.25, colors.HexColor("#e5e7eb")),
             ('LINEBELOW', (0,0), (-1,-2), 0.5, colors.HexColor("#cbd5e1")),
         ]))
         story.append(skills_table)
         story.append(Spacer(1, 15))
 
         # --- Section 4: AI Optimization Recommendations ---
+        story.append(CondPageBreak(2.5 * inch))
         story.append(make_section_header("AI OPTIMIZATION RECOMMENDATIONS"))
         suggestion_elements = []
         if suggestions:
@@ -1033,9 +1044,9 @@ class PDFGenerator:
                 para = para.strip()
                 if not para:
                     continue
-                formatted_para = para.replace("**", "<b>", 1).replace("**", "</b>", 1)
-                while "**" in formatted_para:
-                    formatted_para = formatted_para.replace("**", "<b>", 1).replace("**", "</b>", 1)
+                
+                # Safely replace pairs of ** with <b>...</b>
+                formatted_para = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', para)
                 
                 if formatted_para.startswith("* ") or formatted_para.startswith("- "):
                     formatted_para = f"&bull; {formatted_para[2:]}"
@@ -1056,6 +1067,7 @@ class PDFGenerator:
         story.append(Spacer(1, 15))
 
         # --- Section 5: Key Features (At absolute bottom) ---
+        story.append(CondPageBreak(2.5 * inch))
         story.append(make_section_header("KEY FEATURES"))
         feature_1_content = [
             Paragraph("Comprehensive Scoring", feature_title_style),

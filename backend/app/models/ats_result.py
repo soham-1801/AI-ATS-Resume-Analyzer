@@ -13,7 +13,7 @@ class ATSResult(Base):
     matched_skills = Column(Text, nullable=True)  # JSON-encoded string or text block
     missing_skills = Column(Text, nullable=True)  # JSON-encoded string or text block
     suggestions = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False)
 
     # Relationships
     resume = relationship("Resume", back_populates="ats_results")

@@ -62,4 +62,5 @@ def delete_job_description(
         )
     db.delete(jd)
     db.commit()
-    return
+    from fastapi import Response
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

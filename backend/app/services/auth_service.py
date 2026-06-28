@@ -21,7 +21,7 @@ class AuthService:
         existing_user = cls.get_user_by_email(db, user_data.email)
         if existing_user:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="A user with this email already exists."
             )
         
@@ -51,7 +51,6 @@ class AuthService:
     @classmethod
     def authenticate_user(cls, db: Session, login_data: UserLogin) -> User:
         """Authenticate user email and password."""
-        cls.cleanup_expired_tokens(db)
         user = cls.get_user_by_email(db, login_data.email)
         if not user or not user.password_hash or not verify_password(login_data.password, user.password_hash):
             raise HTTPException(
@@ -64,7 +63,6 @@ class AuthService:
     @classmethod
     def request_password_reset(cls, db: Session, email: str) -> str:
         """Generate a cryptographically secure reset token for the email if user exists."""
-        cls.cleanup_expired_tokens(db)
         user = cls.get_user_by_email(db, email)
         if not user:
             return ""
@@ -78,7 +76,7 @@ class AuthService:
         reset_token = PasswordResetToken(
             user_id=user.id,
             token=hashed_token,
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=1)
+            expires_at=(datetime.now(timezone.utc) + timedelta(hours=1)).replace(tzinfo=None)
         )
         db.add(reset_token)
         db.commit()
@@ -107,7 +105,12 @@ class AuthService:
                 detail="Invalid or expired reset token."
             )
             
-        if reset_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        # Compare expiry time safely (ensure both are naive UTC)
+        expires_at_utc = reset_token.expires_at
+        if expires_at_utc.tzinfo is not None:
+            expires_at_utc = expires_at_utc.astimezone(timezone.utc).replace(tzinfo=None)
+        
+        if expires_at_utc < datetime.now(timezone.utc).replace(tzinfo=None):
             db.delete(reset_token)
             db.commit()
             raise HTTPException(
@@ -134,8 +137,9 @@ class AuthService:
     @classmethod
     def cleanup_expired_tokens(cls, db: Session) -> int:
         """Remove all expired reset tokens from the database."""
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
         result = db.query(PasswordResetToken).filter(
-            PasswordResetToken.expires_at < datetime.now(timezone.utc)
+            PasswordResetToken.expires_at < now_utc
         ).delete()
         db.commit()
         return result
@@ -147,17 +151,21 @@ class AuthService:
         user = cls.get_user_by_email(db, oauth_data.email)
         if user:
             # If user exists, ensure they are linked to this OAuth provider
-            if not user.oauth_provider:
-                user.oauth_provider = oauth_data.provider
-                user.oauth_id = oauth_data.oauth_id
-                db.commit()
-                db.refresh(user)
-            elif user.oauth_provider != oauth_data.provider:
-                # User exists but is signed up with another provider
+            if user.password_hash is not None:
+                # Email exists but was created via local register (password auth)
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="This email is already registered with a password. Please login with your password."
+                )
+            elif user.oauth_provider == oauth_data.provider and user.oauth_id != oauth_data.oauth_id:
+                # The provider matches, but the ID does not.
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"This email is already registered using {user.oauth_provider}."
+                    detail="This email is linked to a different account on this provider."
                 )
+            
+            # If the user is logging in with a DIFFERENT OAuth provider but the same email,
+            # we allow it. This provides a seamless "Continue with..." experience.
             return user
             
         # Create a new user if they do not exist

@@ -1,8 +1,9 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
+from typing import Literal
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=1)
 
 class Token(BaseModel):
     access_token: str
@@ -16,12 +17,12 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 class OAuthLoginRequest(BaseModel):
-    provider: str
-    oauth_id: str
+    provider: Literal["google", "github"]
+    oauth_id: str = Field(..., min_length=1)
     email: EmailStr
     name: str
 
 class OAuthCodeExchangeRequest(BaseModel):
-    code: str
+    code: str = Field(..., min_length=1)
     redirect_uri: str | None = None
     id_token: str | None = None

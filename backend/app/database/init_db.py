@@ -4,13 +4,8 @@ import os
 # Adjust Python path if script is run directly to ensure local imports work
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from sqlalchemy.exc import SQLAlchemyError
-from app.database.database import Base, engine
-from app.models.user import User
-from app.models.resume import Resume
-from app.models.job_description import JobDescription
-from app.models.ats_result import ATSResult
-from app.models.password_reset_token import PasswordResetToken
+from sqlalchemy.exc import SQLAlchemyError  # noqa: E402
+from app.database.database import Base, engine  # noqa: E402
 
 
 def init_db():

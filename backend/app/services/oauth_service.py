@@ -1,7 +1,9 @@
 import os
 import requests
+import logging
 from fastapi import HTTPException, status
-from jose import jwt
+
+logger = logging.getLogger(__name__)
 
 # Retrieve OAuth Credentials from Environment
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -9,8 +11,6 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
 GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
-
-APPLE_CLIENT_ID = os.getenv("APPLE_CLIENT_ID")
 
 class OAuthService:
     @staticmethod
@@ -36,7 +36,7 @@ class OAuthService:
         }
         
         try:
-            r = requests.post(token_url, json=payload, headers={"Accept": "application/json"})
+            r = requests.post(token_url, json=payload, headers={"Accept": "application/json"}, timeout=10)
             if r.status_code != 200:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -55,7 +55,7 @@ class OAuthService:
         # 2. Retrieve user info using the access token
         userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
         try:
-            r_user = requests.get(userinfo_url, headers={"Authorization": f"Bearer {access_token}"})
+            r_user = requests.get(userinfo_url, headers={"Authorization": f"Bearer {access_token}"}, timeout=10)
             if r_user.status_code != 200:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -97,8 +97,9 @@ class OAuthService:
             payload["redirect_uri"] = redirect_uri
 
         try:
-            r = requests.post(token_url, json=payload, headers={"Accept": "application/json"})
+            r = requests.post(token_url, json=payload, headers={"Accept": "application/json"}, timeout=10)
             if r.status_code != 200:
+                print(f"[GITHUB OAUTH ERROR] Token exchange failed. Status: {r.status_code}, Body: {r.text}")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"GitHub token exchange failed: {r.text}"
@@ -106,6 +107,7 @@ class OAuthService:
             tokens = r.json()
             access_token = tokens.get("access_token")
             if not access_token:
+                print(f"[GITHUB OAUTH ERROR] Missing access_token. Response: {tokens}")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"GitHub token response missing access_token: {tokens}"
@@ -122,7 +124,7 @@ class OAuthService:
 
         # 2. Retrieve GitHub profile info
         try:
-            r_profile = requests.get("https://api.github.com/user", headers=headers)
+            r_profile = requests.get("https://api.github.com/user", headers=headers, timeout=10)
             if r_profile.status_code != 200:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -141,7 +143,7 @@ class OAuthService:
         email = profile_data.get("email")
         if not email:
             try:
-                r_emails = requests.get("https://api.github.com/user/emails", headers=headers)
+                r_emails = requests.get("https://api.github.com/user/emails", headers=headers, timeout=10)
                 if r_emails.status_code == 200:
                     emails_list = r_emails.json()
                     # Find primary verified email
@@ -151,8 +153,8 @@ class OAuthService:
                             break
                     if not email and emails_list:
                         email = emails_list[0].get("email")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to parse GitHub email response: {e}", exc_info=True)
         
         if not email:
             email = f"github_{profile_data.get('id')}@example.com"
@@ -163,36 +165,3 @@ class OAuthService:
             "name": profile_data.get("name") or profile_data.get("login", "GitHub User")
         }
 
-    @staticmethod
-    def verify_apple_token(id_token: str, code: str | None = None) -> dict:
-        """Decode and validate Apple ID token."""
-        try:
-            # Decode the ID token without validation in dev mode or fallback
-            payload = jwt.decode(id_token, "", options={"verify_signature": False})
-            email = payload.get("email")
-            sub = payload.get("sub")
-            
-            if not sub:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Apple ID token missing 'sub' claim."
-                )
-            
-            return {
-                "oauth_id": sub,
-                "email": email or f"apple_{sub}@example.com",
-                "name": "Apple User"
-            }
-        except Exception as e:
-            # If id_token parsing fails, check if we have a dev fallback
-            if not APPLE_CLIENT_ID:
-                print("[APPLE OAUTH] DEV MODE FALLBACK: Using mock Apple data")
-                return {
-                    "oauth_id": "apple_dev_mock_12345",
-                    "email": "apple_dev_user@example.com",
-                    "name": "Apple Dev User"
-                }
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Apple ID token validation failed: {str(e)}"
-            )

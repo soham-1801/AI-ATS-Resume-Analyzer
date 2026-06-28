@@ -8,7 +8,7 @@ from app.models.user import User
 from app.models.resume import Resume
 from app.models.job_description import JobDescription
 from app.models.ats_result import ATSResult
-from app.schemas.ats_schema import ATSAnalyzeRequest, ATSAnalyzeResponse
+from app.schemas.ats_schema import ATSAnalyzeRequest, ATSAnalyzeResponse, ATSResultResponse
 from app.api.auth import get_current_user
 from app.services.ats_engine import ATSEngine
 from app.services.ai_suggestions import AISuggestions
@@ -166,7 +166,7 @@ def analyze_resume(
             {}))
 
 
-@router.get("/results/{resume_id}", status_code=status.HTTP_200_OK)
+@router.get("/results/{resume_id}", response_model=list[ATSResultResponse], status_code=status.HTTP_200_OK)
 def get_ats_results_for_resume(
     resume_id: int,
     current_user: User = Depends(get_current_user),
@@ -186,33 +186,10 @@ def get_ats_results_for_resume(
     db_results = db.query(ATSResult).filter(
         ATSResult.resume_id == resume_id).all()
 
-    parsed_results = []
-    for result in db_results:
-        try:
-            m_skills = json.loads(
-                result.matched_skills) if result.matched_skills else []
-        except Exception:
-            m_skills = []
-        try:
-            ms_skills = json.loads(
-                result.missing_skills) if result.missing_skills else []
-        except Exception:
-            ms_skills = []
-
-        parsed_results.append({
-            "id": result.id,
-            "resume_id": result.resume_id,
-            "jd_id": result.jd_id,
-            "ats_score": result.ats_score,
-            "matched_skills": m_skills,
-            "missing_skills": ms_skills,
-            "suggestions": result.suggestions,
-            "created_at": result.created_at
-        })
-    return parsed_results
+    return db_results
 
 
-@router.get("/results/{result_id}/pdf")
+@router.get("/results/{result_id}/pdf", response_class=StreamingResponse)
 def get_pdf_report(
     result_id: int,
     current_user: User = Depends(get_current_user),
@@ -282,14 +259,17 @@ def get_pdf_report(
         ms_skills = []
 
     print(
-        f"[PDF REPORT] Generating PDF byte stream. Candidate: {current_user.name}, Keyword Score: {match_data.get('keyword_score')}, Semantic Score: {match_data.get('semantic_score')}, Final Score: {result.ats_score}"
+        f"[PDF REPORT] Generating PDF byte stream. Account: {current_user.name}, Keyword Score: {match_data.get('keyword_score')}, Semantic Score: {match_data.get('semantic_score')}, Final Score: {result.ats_score}"
     )
+
+    extracted_candidate_name = ATSEngine.extract_name(resume.parsed_text, current_user.name)
+    extracted_candidate_email = ATSEngine.extract_email(resume.parsed_text, current_user.email)
 
     # 6. Generate PDF byte stream
     try:
         pdf_buffer = PDFGenerator.generate_report(
-            candidate_name=current_user.name,
-            candidate_email=current_user.email,
+            candidate_name=extracted_candidate_name,
+            candidate_email=extracted_candidate_email,
             job_title="Target Position Specification" if not jd else f"Target Job Profile (ID: {jd.id})",
             upload_date=result.created_at,
             keyword_score=match_data.get(

@@ -1,6 +1,7 @@
 import os
 import json
 from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 # Load env variables from backend/.env
@@ -48,9 +49,9 @@ class AISuggestions:
             
             # Enforce JSON output type
             response = client.models.generate_content(
-                model="gemini-1.5-flash",
+                model="gemini-2.5-flash",
                 contents=prompt,
-                config={"response_mime_type": "application/json"}
+                config=types.GenerateContentConfig(response_mime_type="application/json")
             )
             
             result_json = json.loads(response.text)
@@ -166,7 +167,7 @@ class AISuggestions:
             )
             
             response = client.models.generate_content(
-                model="gemini-1.5-flash",
+                model="gemini-2.5-flash",
                 contents=prompt
             )
             return response.text.strip()

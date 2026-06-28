@@ -11,7 +11,7 @@ const UploadZone = ({ onUpload, isUploading, uploadProgress, onError }) => {
         if (error.code === "file-too-large") {
           errorMsg = "File is too large. Max size is 5MB.";
         } else if (error.code === "file-invalid-type") {
-          errorMsg = "Invalid file type. Only PDF, DOC, and DOCX files are allowed.";
+          errorMsg = "Invalid file type. Only PDF, DOCX, TXT, JPG, and PNG files are allowed.";
         } else {
           errorMsg = error.message;
         }
@@ -29,8 +29,10 @@ const UploadZone = ({ onUpload, isUploading, uploadProgress, onError }) => {
     onDrop,
     accept: {
       "application/pdf": [".pdf"],
-      "application/msword": [".doc"],
+      "text/plain": [".txt"],
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+      "image/jpeg": [".jpg", ".jpeg"],
+      "image/png": [".png"]
     },
     maxSize: 5 * 1024 * 1024,
     disabled: isUploading,
@@ -84,10 +86,17 @@ const UploadZone = ({ onUpload, isUploading, uploadProgress, onError }) => {
               </p>
             </>
           )}
-          <div className="mt-4 flex gap-3 text-[10px] text-slate-500 font-semibold tracking-wider uppercase">
-            <span>PDF / DOC / DOCX</span>
-            <span>•</span>
-            <span>Max 5MB</span>
+          <div className="mt-4 flex flex-col items-center gap-1">
+            <div className="flex gap-3 text-[10px] text-slate-500 font-semibold tracking-wider uppercase">
+              <span>PDF / DOCX / TXT / JPG / PNG</span>
+              <span>•</span>
+              <span>Max 5MB</span>
+            </div>
+            <div className="mt-2 flex flex-col items-center text-[10px] text-slate-400">
+              <span className="font-semibold text-slate-500">Note:</span>
+              <span>• Text PDFs: first 10 pages analyzed</span>
+              <span>• Scanned PDFs: first 5 pages analyzed</span>
+            </div>
           </div>
         </>
       )}

@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "http://localhost:8000/api"
+BASE_URL = "http://localhost:8001/api"
 
 def test_oauth_endpoints():
     print("=== STARTING OAUTH ROUTE VERIFICATION ===")
@@ -46,26 +46,6 @@ def test_oauth_endpoints():
     assert github_user["oauth_provider"] == "github", f"Expected provider 'github', got {github_user['oauth_provider']}"
     print(f"[OK] GitHub mock user validated: {github_user['name']} ({github_user['email']})")
 
-    # 3. Test Apple OAuth code/token validation fallback
-    print("\n3. Testing Apple Sign In token exchange callback...")
-    apple_res = requests.post(f"{BASE_URL}/auth/oauth/apple", json={
-        "code": "mock_apple_auth_code",
-        "id_token": "mock_apple_id_token",
-        "redirect_uri": "http://localhost:5173/oauth/callback/apple"
-    })
-    assert apple_res.status_code == 200, f"Apple Sign In exchange failed: {apple_res.text}"
-    apple_data = apple_res.json()
-    assert "access_token" in apple_data, "Missing access token"
-    apple_token = apple_data["access_token"]
-    print("[OK] Apple exchange successful")
-
-    # Verify Apple user info
-    apple_me = requests.get(f"{BASE_URL}/auth/me", headers={"Authorization": f"Bearer {apple_token}"})
-    assert apple_me.status_code == 200, f"Apple /me failed: {apple_me.text}"
-    apple_user = apple_me.json()
-    assert apple_user["email"] == "apple_dev_user@example.com", f"Expected mock email, got {apple_user['email']}"
-    assert apple_user["oauth_provider"] == "apple", f"Expected provider 'apple', got {apple_user['oauth_provider']}"
-    print(f"[OK] Apple mock user validated: {apple_user['name']} ({apple_user['email']})")
 
     print("\n=== ALL OAUTH ENDPOINTS PASSED VERIFICATION ===")
 

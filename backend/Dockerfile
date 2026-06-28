@@ -17,9 +17,16 @@ WORKDIR /workspace/backend
 
 # Copy backend application source
 COPY backend/app ./app
-COPY backend/.env ./.env
+COPY backend/alembic ./alembic
+COPY backend/alembic.ini ./
+
+# DO NOT COPY .env — pass secrets at runtime via -e or --env-file
+# This prevents secrets from being baked into the image
+
+# Run database migrations on startup
+RUN alembic upgrade head || true
 
 EXPOSE 8000
 
-# Run development server
+# Run production server
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

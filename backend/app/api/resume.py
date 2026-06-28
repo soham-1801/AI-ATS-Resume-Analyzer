@@ -2,7 +2,6 @@ import os
 import logging
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
 from app.database.connection import get_db
 from app.models.user import User
 from app.models.resume import Resume
@@ -152,4 +151,5 @@ def delete_resume(
             
     db.delete(resume)
     db.commit()
-    return
+    from fastapi import Response
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

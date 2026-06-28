@@ -13,6 +13,8 @@ class ResumeParser:
         try:
             with pdfplumber.open(file_path) as pdf:
                 for idx, page in enumerate(pdf.pages):
+                    if idx >= 10:
+                        break
                     page_text = page.extract_text()
                     if page_text:
                         if idx > 0:
@@ -31,7 +33,6 @@ class ResumeParser:
         Supports paragraph, table, header, footer, and textbox extraction with diagnostics.
         """
         import zipfile
-        from docx import Document
         import docx2txt
 
         filename = os.path.basename(file_path)
@@ -101,24 +102,28 @@ class ResumeParser:
                     if h:
                         for p in h.paragraphs:
                             txt = p.text.strip()
-                            if txt: extracted_chunks.append(txt)
+                            if txt:
+                                extracted_chunks.append(txt)
                         for t in h.tables:
                             for r in t.rows:
                                 for cell in r.cells:
                                     txt = cell.text.strip()
-                                    if txt: extracted_chunks.append(txt)
+                                    if txt:
+                                        extracted_chunks.append(txt)
                 # Footers
                 footers = [section.footer, section.first_page_footer, section.even_page_footer]
                 for f in footers:
                     if f:
                         for p in f.paragraphs:
                             txt = p.text.strip()
-                            if txt: extracted_chunks.append(txt)
+                            if txt:
+                                extracted_chunks.append(txt)
                         for t in f.tables:
                             for r in t.rows:
                                 for cell in r.cells:
                                     txt = cell.text.strip()
-                                    if txt: extracted_chunks.append(txt)
+                                    if txt:
+                                        extracted_chunks.append(txt)
 
             # D. Text boxes (drawing / w:txbxContent)
             try:
@@ -220,6 +225,8 @@ class ResumeParser:
             # Render PDF pages to images using pdfplumber (uses pdfium natively)
             with pdfplumber.open(file_path) as pdf:
                 for idx, page in enumerate(pdf.pages):
+                    if idx >= 5:
+                        break
                     print(f"[RESUME PARSER] Rendering page {idx + 1} to image...")
                     # Convert page to high-res PIL image
                     pil_img = page.to_image(resolution=150).original
@@ -242,17 +249,19 @@ class ResumeParser:
         if api_key:
             print("[RESUME PARSER] Attempting Gemini API multimodal PDF OCR fallback...")
             try:
-                import google.generativeai as genai
-                genai.configure(api_key=api_key)
-                model = genai.GenerativeModel("gemini-1.5-flash")
+                from google import genai
+                from google.genai import types
+                client = genai.Client(api_key=api_key)
                 
                 with open(file_path, "rb") as f:
                     pdf_bytes = f.read()
                 
-                response = model.generate_content([
-                    {"mime_type": "application/pdf", "data": pdf_bytes},
-                    "Perform high-fidelity OCR on this document. Extract all text contents exactly as they appear, preserving formatting and structure. Do not add any conversational intros or explanations."
-                ])
+                part = types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")
+                
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[part, "Perform high-fidelity OCR on this document. Extract all text contents exactly as they appear, preserving formatting and structure. Do not add any conversational intros or explanations."]
+                )
                 
                 gemini_text = response.text
                 if gemini_text and gemini_text.strip():
@@ -261,21 +270,62 @@ class ResumeParser:
             except Exception as gemini_err:
                 print(f"[RESUME PARSER] Gemini API OCR fallback failed: {gemini_err}")
                 
-        # 3. Development Fallback: Simulating text extraction for local testing
-        print("[RESUME PARSER] DEVELOPER WARNING: Both Tesseract OCR and GEMINI_API_KEY are missing.")
-        print("[RESUME PARSER] Activating Developer Fallback: Generating simulated resume text from file name to prevent application blocks.")
+        # 3. If both fail, raise exception
+        raise ValueError("Unable to extract text from the scanned PDF.")
+
+    @classmethod
+    def run_ocr_on_image(cls, file_path: str) -> str:
+        """Runs OCR on an image file using pytesseract with a high-fidelity Gemini API fallback."""
+        print(f"[RESUME PARSER] Image detected. Initiating OCR pipeline for: {file_path}")
+        extracted_text = ""
         
-        simulated_text = (
-            "Developer Profile: Raj Pandya\n"
-            "Target Position: Software Engineer / Full Stack Developer\n"
-            "Technical Skills: Python, JavaScript, TypeScript, React, Node.js, SQL, PostgreSQL, Git, Docker, AWS.\n"
-            "Professional Experience:\n"
-            "- Software Engineer at Tech Solutions (2024 - Present): Spearheaded the migration of backend services to FastAPI, resulting in a 40% reduction in response latency. Designed interactive React dashboards for client data visualization.\n"
-            "- Junior Developer at Code Innovators (2022 - 2024): Designed responsive UI components using Tailwind CSS and built CRUD API integrations using Axios and React Hooks.\n"
-            "Projects:\n"
-            "- AI Resume Tracking System (ATS): Integrated NLP semantic matching models and structured Gemini suggestions into a dashboard interface.\n"
-        )
-        return simulated_text
+        # 1. Attempt local OCR via pytesseract
+        try:
+            import pytesseract
+            from PIL import Image
+            print("[RESUME PARSER] Reading image...")
+            pil_img = Image.open(file_path)
+            # Perform OCR
+            extracted_text = pytesseract.image_to_string(pil_img)
+            
+            if extracted_text and extracted_text.strip():
+                print(f"[RESUME PARSER] Local pytesseract OCR succeeded on image. Extracted {len(extracted_text)} characters.")
+                return extracted_text
+                
+        except Exception as local_err:
+            print(f"[RESUME PARSER] Local pytesseract OCR failed on image or Tesseract is not installed. Error: {local_err}")
+        
+        # 2. Fallback to Gemini API-based multimodal OCR
+        api_key = os.getenv("GEMINI_API_KEY")
+        if api_key:
+            print("[RESUME PARSER] Attempting Gemini API multimodal image OCR fallback...")
+            try:
+                from google import genai
+                from google.genai import types
+                client = genai.Client(api_key=api_key)
+                
+                with open(file_path, "rb") as f:
+                    image_bytes = f.read()
+                
+                ext = file_path.rsplit(".", 1)[-1].lower()
+                mime_type = "image/png" if ext == "png" else "image/jpeg"
+
+                part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+                
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[part, "Perform high-fidelity OCR on this document. Extract all text contents exactly as they appear, preserving formatting and structure. Do not add any conversational intros or explanations."]
+                )
+                
+                gemini_text = response.text
+                if gemini_text and gemini_text.strip():
+                    print(f"[RESUME PARSER] Gemini API OCR succeeded on image. Extracted {len(gemini_text)} characters.")
+                    return gemini_text
+            except Exception as gemini_err:
+                print(f"[RESUME PARSER] Gemini API OCR fallback on image failed: {gemini_err}")
+                
+        # 3. If both fail, raise exception
+        raise ValueError("Unable to extract text from the image file.")
 
     @classmethod
     def parse(cls, file_path: str) -> str:
@@ -284,23 +334,27 @@ class ResumeParser:
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found at: {file_path}")
             
-        ext = file_path.split(".")[-1].lower()
+        ext = file_path.rsplit(".", 1)[-1].lower() if "." in file_path else ""
         if ext == "pdf":
             text = cls.extract_text_from_pdf(file_path)
             if not text.strip():
-                print(f"[RESUME PARSER] WARNING: Scanned PDF detected at {file_path}. Redirecting to OCR pipeline...")
+                print(f"[RESUME PARSER] WARNING: No readable text extracted via pdfplumber. Redirecting to OCR pipeline for {file_path}...")
                 text = cls.run_ocr_on_pdf(file_path)
         elif ext in ["docx", "doc"]:
             text = cls.extract_text_from_docx(file_path)
+        elif ext in ["jpg", "jpeg", "png"]:
+            text = cls.run_ocr_on_image(file_path)
         elif ext == "txt":
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     text = f.read()
                 if not text.strip():
                     raise ValueError("The text file is empty.")
+            except ValueError:
+                raise
             except Exception as e:
                 print(f"[RESUME PARSER] Error reading TXT {file_path}: {e}")
-                text = ""
+                raise ValueError(f"Failed to read TXT file: {e}")
         else:
             raise ValueError(f"Unsupported file format: {ext}")
             

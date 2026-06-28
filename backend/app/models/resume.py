@@ -10,7 +10,7 @@ class Resume(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     file_name = Column(String(255), nullable=False)
     file_path = Column(String(512), nullable=False)
-    upload_date = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    upload_date = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False)
     parsed_text = Column(Text, nullable=True)  # Extracted text stored for ATS analysis
 
     # Relationships

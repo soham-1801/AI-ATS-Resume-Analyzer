@@ -1,4 +1,3 @@
-import os
 from app.services.resume_parser import ResumeParser
 
 file_path = r"C:\Users\SOHAM MANGROLIYA\OneDrive\Desktop\ATS_KIRO\backend\uploads\resumes\20260611_111619_004cb9986c79_RajPandya1.pdf"

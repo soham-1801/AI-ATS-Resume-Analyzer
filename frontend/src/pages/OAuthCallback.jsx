@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useRef } from "react";
 import authService from "../services/authService";
 import { Sparkles, AlertCircle, ArrowLeft } from "lucide-react";
 
@@ -12,20 +13,18 @@ const OAuthCallback = () => {
   
   const [error, setError] = useState("");
   const [loadingMsg, setLoadingMsg] = useState("Validating authentication credentials...");
+  const isProcessed = useRef(false);
 
   useEffect(() => {
+    if (isProcessed.current) return;
+    isProcessed.current = true;
+
     const processOAuth = async () => {
       // 1. Parse authorization code and id_token from query params OR hash fragment
       const queryParams = new URLSearchParams(location.search);
       let code = queryParams.get("code");
       let idToken = queryParams.get("id_token");
       
-      // Also check hash fragment (e.g. for Apple response_mode=fragment)
-      if (location.hash) {
-        const hashParams = new URLSearchParams(location.hash.substring(1));
-        if (!code) code = hashParams.get("code");
-        if (!idToken) idToken = hashParams.get("id_token");
-      }
 
       if (!code && !idToken) {
         setError(`Authorization code or identifier was not found in the callback request from ${provider}.`);

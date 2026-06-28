@@ -10,4 +10,4 @@ class PasswordResetToken(Base):
     token = Column(String(255), unique=True, index=True, nullable=False)
     expires_at = Column(DateTime, nullable=False)
     
-    user = relationship("User")
+    user = relationship("User", back_populates="password_reset_tokens")

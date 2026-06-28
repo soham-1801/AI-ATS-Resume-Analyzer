@@ -91,8 +91,8 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       await authService.register(name, email, password);
-      // Auto login after registration (remembers by default)
-      return await login(email, password, true);
+      setLoading(false);
+      return true;
     } catch (error) {
       setLoading(false);
       throw error;

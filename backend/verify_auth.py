@@ -1,4 +1,3 @@
-import sys
 import requests
 import random
 import string

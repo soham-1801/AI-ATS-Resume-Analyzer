@@ -83,10 +83,11 @@ The backend is organized into modular components, each with a specific responsib
 
 * **Resume Processing**
 
-  * Resume upload
+  * Resume upload (Max file size: 5MB)
   * Resume parsing
   * Text extraction
   * File validation
+  * **Note**: Only the first 10 pages are analyzed for performance optimization.
 
 * **ATS Analysis**
 
@@ -248,7 +249,7 @@ GOOGLE_CLIENT_SECRET=<YOUR_GOOGLE_CLIENT_SECRET>
 GITHUB_CLIENT_ID=<YOUR_GITHUB_CLIENT_ID>
 GITHUB_CLIENT_SECRET=<YOUR_GITHUB_CLIENT_SECRET>
 
-APPLE_CLIENT_ID=<YOUR_APPLE_CLIENT_ID>
+
 ```
 
 For the frontend, create a `.env` file inside the **frontend** directory.
