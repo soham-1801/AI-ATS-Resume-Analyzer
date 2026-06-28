@@ -359,24 +359,33 @@ The application includes multiple security mechanisms implemented across the aut
 
 ### Login
 
-<!-- Add Screenshot -->
+<p align="center">
+  <img src="./screenshots/login.jpeg" alt="Login Page" width="900">
+</p>
 
 ### Dashboard
 
-<!-- Add Screenshot -->
+<p align="center">
+  <img src="./screenshots/dashboard.png" alt="Dashboard" width="900">
+</p>
 
 ### Resume Upload
 
-<!-- Add Screenshot -->
+<p align="center">
+  <img src="./screenshots/resume-upload.png" alt="Resume Upload" width="900">
+</p>
 
 ### ATS Analysis
 
-<!-- Add Screenshot -->
+<p align="center">
+  <img src="./screenshots/ats-analysis.png" alt="ATS Analysis" width="900">
+</p>
 
 ### AI Resume Suggestions
 
-<!-- Add Screenshot -->
-
+<p align="center">
+  <img src="./screenshots/ai-suggestions.png" alt="AI Resume Suggestions" width="900">
+</p>
 ---
 
 ## Deployment
