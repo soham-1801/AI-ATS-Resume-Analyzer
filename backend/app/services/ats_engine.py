@@ -120,6 +120,23 @@ class ATSEngine:
                 if len(words) <= 7:
                     if any(kw in lower_line for kw in title_keywords):
                         return clean_line.title()
+            
+            # Fallback heuristic: search for the first title keyword in the text
+            import re
+            text_chunk = jd_text[:500].replace('\n', ' ')
+            words = text_chunk.split()
+            for i, word in enumerate(words):
+                clean_word = word.lower().strip('.,;:!?"()')
+                if clean_word in title_keywords:
+                    # Extract up to 2 words before and 1 word after
+                    start = max(0, i - 2)
+                    end = min(len(words), i + 2)
+                    extracted = " ".join(words[start:end])
+                    extracted = re.sub(r'[^a-zA-Z\s]', '', extracted).title()
+                    # Clean common stop words at the ends
+                    extracted_words = [w for w in extracted.split() if w.lower() not in ['a', 'an', 'the', 'to', 'for', 'we', 'are', 'hiring', 'looking', 'in', 'our', 'team']]
+                    if extracted_words:
+                        return " ".join(extracted_words)
         except Exception as e:
             print(f"Job title extraction error: {e}")
             
