@@ -23,10 +23,44 @@ def get_nlp_model():
 
 class ATSEngine:
     @staticmethod
+    def _flatten_if_json(text: str) -> str:
+        if not text or not text.strip():
+            return text
+        clean_text = text.strip()
+        if clean_text.startswith("```"):
+            lines = clean_text.split('\n')
+            if len(lines) > 2:
+                clean_text = '\n'.join(lines[1:-1]).strip()
+        if clean_text.startswith("{") or clean_text.startswith("["):
+            import json
+            try:
+                data = json.loads(clean_text)
+                def get_strings(obj):
+                    strings = []
+                    if isinstance(obj, dict):
+                        for k, v in obj.items():
+                            if str(k).lower() in ["name", "candidate_name"]:
+                                strings.insert(0, str(v))
+                            else:
+                                strings.extend(get_strings(v))
+                    elif isinstance(obj, list):
+                        for v in obj:
+                            strings.extend(get_strings(v))
+                    elif isinstance(obj, str):
+                        strings.append(obj)
+                    return strings
+                strings = get_strings(data)
+                if strings:
+                    return "\n".join(strings)
+            except Exception:
+                pass
+        return text
+    @staticmethod
     def extract_name(resume_text: str, fallback_name: str) -> str:
         """Extracts candidate name from the top of the resume using heuristics and NER."""
         if not resume_text or not resume_text.strip():
             return fallback_name
+        resume_text = ATSEngine._flatten_if_json(resume_text)
             
         # 1. Primary Heuristic: First reasonable line (highly accurate for resumes)
         try:
@@ -96,6 +130,7 @@ class ATSEngine:
         """Extracts job title from the top of the job description using heuristics."""
         if not jd_text or not jd_text.strip():
             return fallback_title
+        jd_text = ATSEngine._flatten_if_json(jd_text)
             
         try:
             lines = [line.strip() for line in jd_text[:1000].split('\n') if line.strip()]
@@ -137,15 +172,14 @@ class ATSEngine:
             for i, word in enumerate(words):
                 clean_word = word.lower().strip('.,;:!?"()')
                 if clean_word in title_keywords:
-                    # Extract up to 2 words before and 1 word after
-                    start = max(0, i - 2)
-                    end = min(len(words), i + 2)
-                    extracted = " ".join(words[start:end])
-                    extracted = re.sub(r'[^a-zA-Z\s]', '', extracted).title()
-                    # Clean common stop words at the ends
-                    extracted_words = [w for w in extracted.split() if w.lower() not in ['a', 'an', 'the', 'to', 'for', 'we', 'are', 'hiring', 'looking', 'in', 'our', 'team']]
-                    if extracted_words:
-                        return " ".join(extracted_words)
+                    # Found a keyword, try to extract surrounding words for context (up to 3 words)
+                    start_idx = max(0, i - 1)
+                    end_idx = min(len(words), i + 2)
+                    extracted_words = words[start_idx:end_idx]
+                    cleaned_extracted = [w for w in extracted_words if w.lower().strip('.,;:!?"()') not in remove_words_from_title]
+                    if cleaned_extracted:
+                        extracted = " ".join(cleaned_extracted).title()
+                        return re.sub(r'[^\w\s]', '', extracted).strip()
         except Exception as e:
             print(f"Job title extraction error: {e}")
             
