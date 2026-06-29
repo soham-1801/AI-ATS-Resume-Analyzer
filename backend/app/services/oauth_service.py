@@ -17,13 +17,10 @@ class OAuthService:
     def exchange_google_code(code: str, redirect_uri: str) -> dict:
         """Exchange Google authorization code for access token and fetch user profile."""
         if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
-            # Fallback to dev mode if env vars are missing
-            print("[GOOGLE OAUTH] DEV MODE FALLBACK: Using mock Google data")
-            return {
-                "oauth_id": "google_dev_mock_12345",
-                "email": "google_dev_user@example.com",
-                "name": "Google Dev User"
-            }
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Google OAuth credentials are not configured on the server."
+            )
 
         # 1. Exchange authorization code for tokens
         token_url = "https://oauth2.googleapis.com/token"
@@ -79,12 +76,10 @@ class OAuthService:
     def exchange_github_code(code: str, redirect_uri: str | None = None) -> dict:
         """Exchange GitHub authorization code for access token and fetch user details."""
         if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
-            print("[GITHUB OAUTH] DEV MODE FALLBACK: Using mock GitHub data")
-            return {
-                "oauth_id": "github_dev_mock_12345",
-                "email": "github_dev_user@example.com",
-                "name": "GitHub Dev User"
-            }
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="GitHub OAuth credentials are not configured on the server."
+            )
 
         # 1. Exchange authorization code for token
         token_url = "https://github.com/login/oauth/access_token"

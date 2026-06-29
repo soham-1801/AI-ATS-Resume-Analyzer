@@ -265,12 +265,14 @@ def get_pdf_report(
     extracted_candidate_name = ATSEngine.extract_name(resume.parsed_text, current_user.name)
     extracted_candidate_email = ATSEngine.extract_email(resume.parsed_text, current_user.email)
 
+    extracted_job_title = ATSEngine.extract_job_title(jd.description if jd else "", "Target Position Specification" if not jd else f"Target Job Profile (ID: {jd.id})")
+
     # 6. Generate PDF byte stream
     try:
         pdf_buffer = PDFGenerator.generate_report(
             candidate_name=extracted_candidate_name,
             candidate_email=extracted_candidate_email,
-            job_title="Target Position Specification" if not jd else f"Target Job Profile (ID: {jd.id})",
+            job_title=extracted_job_title,
             upload_date=result.created_at,
             keyword_score=match_data.get(
                 "keyword_score",

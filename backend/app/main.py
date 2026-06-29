@@ -78,7 +78,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception during request {request.method} {request.url.path}: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"message": f"Internal Server Error: {str(exc)}"}
+        content={"detail": f"Internal Server Error: {str(exc)}"}
     )
 
 @app.middleware("http")
