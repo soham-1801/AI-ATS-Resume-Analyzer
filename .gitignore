@@ -73,3 +73,12 @@ Sample_Resume_John_Doe.pdf
 # OS Files
 .DS_Store
 Thumbs.db
+
+# Untracked test and database files
+backend/ats_db.sqlite
+backend/debug_pdf.py
+backend/test_pdf.py
+backend/test_render_pdf.py
+test_cors_500.py
+test_cors_http_error.py
+test_streaming.py
