@@ -247,7 +247,21 @@ const ATSAnalysis = () => {
       setSuccess("PDF report downloaded successfully!");
     } catch (err) {
       console.error("Failed to download PDF report:", err);
-      setError("Failed to download authenticated PDF report.");
+      let errorMsg = "Failed to download authenticated PDF report.";
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const json = JSON.parse(text);
+          if (json.detail) {
+            errorMsg = json.detail;
+          } else if (json.message) {
+            errorMsg = json.message;
+          }
+        } catch (e) {}
+      } else if (err.response?.data?.detail) {
+        errorMsg = err.response.data.detail;
+      }
+      setError(errorMsg);
     } finally {
       setDownloadingPdf(false);
     }
