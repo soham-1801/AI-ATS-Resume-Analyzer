@@ -247,19 +247,23 @@ const ATSAnalysis = () => {
       setSuccess("PDF report downloaded successfully!");
     } catch (err) {
       console.error("Failed to download PDF report:", err);
-      let errorMsg = "Failed to download authenticated PDF report.";
-      if (err.response?.data instanceof Blob) {
+      let errorMsg = "PDF Download Error: ";
+      if (!err.response) {
+        errorMsg += err.message || "Network Error / CORS";
+      } else if (err.response.data instanceof Blob) {
         try {
           const text = await err.response.data.text();
-          const json = JSON.parse(text);
-          if (json.detail) {
-            errorMsg = json.detail;
-          } else if (json.message) {
-            errorMsg = json.message;
+          try {
+            const json = JSON.parse(text);
+            errorMsg += json.detail || json.message || "Unknown JSON Error";
+          } catch (e) {
+            errorMsg += "Server returned HTML/Text: " + text.substring(0, 100);
           }
-        } catch (e) {}
-      } else if (err.response?.data?.detail) {
-        errorMsg = err.response.data.detail;
+        } catch (e) {
+          errorMsg += "Failed to read blob text.";
+        }
+      } else {
+        errorMsg += err.response.data?.detail || err.response.data?.message || err.response.statusText;
       }
       setError(errorMsg);
     } finally {
