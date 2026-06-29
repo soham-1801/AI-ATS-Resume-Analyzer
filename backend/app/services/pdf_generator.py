@@ -1,6 +1,6 @@
 import io
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether, PageBreak, CondPageBreak
@@ -60,8 +60,8 @@ class PDFGenerator:
             'ReportTitle',
             parent=styles['Heading1'],
             fontName='Helvetica-Bold',
-            fontSize=24,
-            leading=28,
+            fontSize=16,
+            leading=20,
             textColor=PRIMARY_COLOR,
             spaceAfter=6
         )
@@ -431,12 +431,18 @@ class PDFGenerator:
 
         # --- Section 1: Cover-Style Summary Section at the Top ---
         details_style = ParagraphStyle('Details', parent=body_style, leading=16)
+        if upload_date:
+            upload_date_ist = upload_date + timedelta(hours=5, minutes=30)
+            date_str = upload_date_ist.strftime('%Y-%m-%d %I:%M %p IST')
+        else:
+            date_str = 'Unknown'
+            
         left_content = [
             Paragraph(f"<font size='14'><b>{candidate_name}</b></font>", ParagraphStyle('CandName', parent=bold_body_style, fontSize=14, textColor=PRIMARY_COLOR)),
             Spacer(1, 6),
             Paragraph(f"<b>Email:</b> {candidate_email}", details_style),
             Paragraph(f"<b>Target Role:</b> {job_title if job_title else 'Software Engineer'}", details_style),
-            Paragraph(f"<b>Date:</b> {upload_date.strftime('%Y-%m-%d %H:%M UTC') if upload_date else 'Unknown'}", details_style),
+            Paragraph(f"<b>Date:</b> {date_str}", details_style),
         ]
         
         score_style = ParagraphStyle('ScoreVal', fontName='Helvetica-Bold', fontSize=15, leading=18, textColor=PRIMARY_COLOR, alignment=1)

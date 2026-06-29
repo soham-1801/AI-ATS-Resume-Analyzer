@@ -96,16 +96,29 @@ class ATSEngine:
             return fallback_title
             
         try:
-            lines = [line.strip() for line in jd_text[:500].split('\n') if line.strip()]
-            invalid_words = ["about", "we are", "description", "requirements", "responsibilities", "role", "looking for"]
+            lines = [line.strip() for line in jd_text[:1000].split('\n') if line.strip()]
+            title_keywords = ["engineer", "developer", "analyst", "manager", "designer", "scientist", 
+                              "architect", "consultant", "administrator", "specialist", "director", 
+                              "executive", "coordinator", "lead", "associate", "intern", "technician", 
+                              "programmer", "officer", "assistant", "clerk", "representative", "strategist", "expert"]
+            invalid_words = ["about", "we are", "description", "requirements", "responsibilities", "role", "looking for", "you will", "design", "build", "create", "implement", "optimize", "work"]
+            
             for line in lines:
                 # Clean markdown characters
                 clean_line = line.replace('*', '').replace('_', '').replace('#', '').strip()
                 if not clean_line:
                     continue
-                # If the line is short enough and doesn't contain obvious non-title keywords
-                if len(clean_line.split()) <= 8:
-                    if not any(clean_line.lower().startswith(kw) for kw in invalid_words):
+                
+                lower_line = clean_line.lower()
+                
+                # Check for verbs indicating responsibilities
+                if any(lower_line.startswith(kw) for kw in invalid_words):
+                    continue
+                    
+                # If the line is short enough and contains a job title keyword
+                words = clean_line.split()
+                if len(words) <= 7:
+                    if any(kw in lower_line for kw in title_keywords):
                         return clean_line.title()
         except Exception as e:
             print(f"Job title extraction error: {e}")
