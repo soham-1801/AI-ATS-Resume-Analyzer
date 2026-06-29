@@ -294,14 +294,13 @@ class PDFGenerator:
 
             card_content = [
                 Paragraph(title.upper(), t_style),
-                Spacer(1, 10),
+                Spacer(1, 6),
                 Paragraph(f"<b>{int(score)}%</b>", v_style),
-                Spacer(1, 12),
+                Spacer(1, 8),
                 badge_table
             ]
             # Wrap content in a Table to apply styling, background, and border
-            # Fixed width and height (1.8 * inch) to ensure identical dimensions and prevent overlaps
-            card_table = Table([[card_content]], colWidths=[2.3 * inch], rowHeights=[2.0 * inch])
+            card_table = Table([[card_content]], colWidths=[2.3 * inch], rowHeights=[1.5 * inch])
             card_table.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,-1), bg_color),
                 ('BOX', (0,0), (-1,-1), 1.5, border_color),
@@ -321,11 +320,11 @@ class PDFGenerator:
                 ('TOPPADDING', (0,0), (-1,-1), 0),
             ]))
             return KeepTogether([
-                Spacer(1, 35),
+                Spacer(1, 18),
                 header_para,
-                Spacer(1, 6),
+                Spacer(1, 4),
                 line,
-                Spacer(1, 14)
+                Spacer(1, 8)
             ])
 
         # Helper to create side-by-side list cards (Strengths / Weaknesses or Section Detection)
@@ -500,10 +499,10 @@ class PDFGenerator:
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ]))
         story.append(cover_table)
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 8))
 
         # --- Section 2: ATS Intelligence Dashboard (6 Score Cards) ---
-        story.append(CondPageBreak(2.5 * inch))
+        story.append(CondPageBreak(2.0 * inch))
         story.append(make_section_header("ATS INTELLIGENCE DASHBOARD"))
 
         dashboard_data = [
@@ -520,16 +519,16 @@ class PDFGenerator:
             ]
         ]
         
-        dashboard_table = Table(dashboard_data, colWidths=[2.3 * inch, 0.3 * inch, 2.3 * inch, 0.3 * inch, 2.3 * inch], rowHeights=[None, 0.15 * inch, None])
+        dashboard_table = Table(dashboard_data, colWidths=[2.3 * inch, 0.3 * inch, 2.3 * inch, 0.3 * inch, 2.3 * inch], rowHeights=[None, 0.1 * inch, None])
         dashboard_table.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('PADDING', (0,0), (-1,-1), 0),
         ]))
         story.append(dashboard_table)
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 8))
 
         # --- Section 2.1: Why This Score? ---
-        story.append(CondPageBreak(2.5 * inch))
+        story.append(CondPageBreak(2.0 * inch))
         story.append(make_section_header("WHY THIS SCORE?"))
         for cat in (category_breakdown or []):
             name_cat = cat.get("name", "")
@@ -610,12 +609,12 @@ class PDFGenerator:
                 ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ]))
             story.append(cat_card)
-            story.append(Spacer(1, 12))
+            story.append(Spacer(1, 8))
             
-        story.append(Spacer(1, 5))
+        story.append(Spacer(1, 4))
 
         # --- Section 2.2: Keywords Analysis (Matched vs Missing Table) ---
-        story.append(CondPageBreak(2.5 * inch))
+        story.append(CondPageBreak(2.0 * inch))
         story.append(make_section_header("KEYWORDS ANALYSIS"))
         matched_str = ", ".join(matched_skills) if matched_skills else "None"
         
@@ -686,10 +685,10 @@ class PDFGenerator:
             ('PADDING', (0,0), (-1,-1), 0),
         ]))
         story.append(kw_table)
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 8))
 
         # --- Section 2.3: ATS Recovery Calculator (Callout Highlight Style) ---
-        story.append(CondPageBreak(2.5 * inch))
+        story.append(CondPageBreak(2.0 * inch))
         story.append(make_section_header("ATS RECOVERY CALCULATOR"))
         if intelligence_layer:
             current = intelligence_layer.get("current_score", 0.0)
@@ -795,10 +794,10 @@ class PDFGenerator:
             story.append(large_calc_card)
         else:
             story.append(Paragraph("Recovery calculator data unavailable.", body_style))
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 8))
 
         # --- Section 2.4: Strengths & Weaknesses (2-column layout) ---
-        story.append(CondPageBreak(2.5 * inch))
+        story.append(CondPageBreak(2.0 * inch))
         story.append(make_section_header("STRENGTHS & WEAKNESSES"))
         if intelligence_layer:
             strengths_list = intelligence_layer.get("strengths", [])
@@ -818,10 +817,10 @@ class PDFGenerator:
             story.append(str_weak_table)
         else:
             story.append(Paragraph("Strengths and weaknesses data unavailable.", body_style))
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 8))
 
         # --- Section 2.5: Recruiter Readiness ---
-        story.append(CondPageBreak(2.5 * inch))
+        story.append(CondPageBreak(2.0 * inch))
         story.append(make_section_header("RECRUITER READINESS"))
         if intelligence_layer:
             readiness = intelligence_layer.get("readiness_indicator", "Not Interview Ready")
@@ -859,10 +858,10 @@ class PDFGenerator:
             story.append(readiness_table)
         else:
             story.append(Paragraph("Recruiter readiness details unavailable.", body_style))
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 8))
 
         # --- Section 2.5.1: Resume Section Detection ---
-        story.append(CondPageBreak(2.5 * inch))
+        story.append(CondPageBreak(2.0 * inch))
         story.append(make_section_header("RESUME SECTION DETECTION"))
         if intelligence_layer:
             found_list = intelligence_layer.get("found_sections", [])
@@ -882,10 +881,10 @@ class PDFGenerator:
             story.append(sec_table)
         else:
             story.append(Paragraph("Section detection details unavailable.", body_style))
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 8))
 
         # --- Section 2.5.2: ATS Keyword Coverage ---
-        story.append(CondPageBreak(2.5 * inch))
+        story.append(CondPageBreak(2.0 * inch))
         story.append(make_section_header("ATS KEYWORD COVERAGE"))
         if intelligence_layer:
             coverage_pct = intelligence_layer.get("keyword_coverage_percentage", 0.0)
@@ -933,7 +932,7 @@ class PDFGenerator:
             story.append(cov_table)
         else:
             story.append(Paragraph("Keyword coverage details unavailable.", body_style))
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 8))
 
         # --- Section 2.6: Priority Fix Rankings ---
         if intelligence_layer:
@@ -965,7 +964,7 @@ class PDFGenerator:
                 ('BOX', (0,0), (-1,-1), 0.25, colors.HexColor("#e5e7eb")),
             ]))
             story.append(fixes_box)
-            story.append(Spacer(1, 15))
+            story.append(Spacer(1, 8))
 
         # --- Section 2.6.5: ATS Improvement Summary ("How to Reach 80% ATS Score") ---
         if intelligence_layer and intelligence_layer.get("improvement_summary"):
@@ -988,10 +987,10 @@ class PDFGenerator:
                 ('BOX', (0,0), (-1,-1), 0.25, colors.HexColor("#e5e7eb")),
             ]))
             story.append(summary_box)
-            story.append(Spacer(1, 15))
+            story.append(Spacer(1, 8))
 
         # --- Section 2.7: Search Indexing & Semantic Roadmap ---
-        story.append(CondPageBreak(2.5 * inch))
+        story.append(CondPageBreak(2.0 * inch))
         story.append(make_section_header("ATS SEARCH INDEXING & SEMANTIC ROADMAP"))
         if intelligence_layer:
             kw_impact = intelligence_layer.get("keyword_impact_score", 0.0)
@@ -1010,10 +1009,10 @@ class PDFGenerator:
                 ('BOX', (0,0), (-1,-1), 0.25, colors.HexColor("#e5e7eb")),
             ]))
             story.append(impact_box)
-            story.append(Spacer(1, 15))
+            story.append(Spacer(1, 8))
 
         # --- Section 3: Skill Map & Keyword Matches ---
-        story.append(CondPageBreak(2.5 * inch))
+        story.append(CondPageBreak(2.0 * inch))
         story.append(make_section_header("SKILL MAP & KEYWORD MATCHES"))
         matched_text = ", ".join(matched_skills) if matched_skills else "None"
         missing_text = ", ".join(missing_skills) if missing_skills else "None"
@@ -1038,10 +1037,10 @@ class PDFGenerator:
             ('LINEBELOW', (0,0), (-1,-2), 0.5, colors.HexColor("#cbd5e1")),
         ]))
         story.append(skills_table)
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 8))
 
         # --- Section 4: AI Optimization Recommendations ---
-        story.append(CondPageBreak(2.5 * inch))
+        story.append(CondPageBreak(2.0 * inch))
         story.append(make_section_header("AI OPTIMIZATION RECOMMENDATIONS"))
         suggestion_elements = []
         if suggestions:
@@ -1070,10 +1069,10 @@ class PDFGenerator:
 
         for elem in suggestion_elements:
             story.append(elem)
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 8))
 
         # --- Section 5: Key Features (At absolute bottom) ---
-        story.append(CondPageBreak(2.5 * inch))
+        story.append(CondPageBreak(2.0 * inch))
         story.append(make_section_header("KEY FEATURES"))
         feature_1_content = [
             Paragraph("Comprehensive Scoring", feature_title_style),
