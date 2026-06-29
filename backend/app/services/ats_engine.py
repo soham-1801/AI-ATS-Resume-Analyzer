@@ -34,8 +34,10 @@ class ATSEngine:
             invalid_words = ["resume", "curriculum", "cv", "email", "phone", "mobile", "address", "page", "contact"]
             for line in lines:
                 # Clean markdown characters that might interfere
-                clean_line = line.replace('*', '').replace('_', '').replace('#', '').replace('`', '').strip()
+                clean_line = line.replace('*', '').replace('_', '').replace('#', '').replace('`', '').replace('{', '').replace('}', '').replace('[', '').replace(']', '').replace('"', '').strip()
                 if not clean_line or clean_line.lower() in ["json", "markdown", "html", "text"]:
+                    continue
+                if not any(c.isalpha() for c in clean_line):
                     continue
                 if any(kw in clean_line.lower() for kw in invalid_words) or "@" in clean_line or sum(c.isdigit() for c in clean_line) > 0:
                     continue
@@ -107,8 +109,10 @@ class ATSEngine:
             
             for line in lines:
                 # Clean markdown characters
-                clean_line = line.replace('*', '').replace('_', '').replace('#', '').replace('`', '').strip()
+                clean_line = line.replace('*', '').replace('_', '').replace('#', '').replace('`', '').replace('{', '').replace('}', '').replace('[', '').replace(']', '').replace('"', '').strip()
                 if not clean_line or clean_line.lower() in ["json", "markdown", "html", "text"]:
+                    continue
+                if not any(c.isalpha() for c in clean_line):
                     continue
                 
                 lower_line = clean_line.lower()
