@@ -199,122 +199,132 @@ def get_pdf_report(
     Generate and stream a professional PDF evaluation report for a given ATS audit ID.
     Protected by JWT.
     """
-    print(
-        f"[PDF REPORT] Request received for result ID: {result_id}. User: {current_user.email}"
-    )
-
-    # 1. Fetch the ATSResult record
-    result = db.query(ATSResult).filter(ATSResult.id == result_id).first()
-    if not result:
-        print(
-            f"[PDF REPORT] Error: ATS result record ID {result_id} not found in database.")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="ATS analysis result not found."
-        )
-
-    # 2. Verify resume ownership
-    resume = db.query(Resume).filter(
-        Resume.id == result.resume_id,
-        Resume.user_id == current_user.id).first()
-    if not resume:
-        print(
-            f"[PDF REPORT] Access Denied: User {current_user.email} does not own resume ID {result.resume_id} linked to result ID {result_id}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied or resume not owned by current user."
-        )
-
-    # 3. Load Job Description
-    jd = db.query(JobDescription).filter(
-        JobDescription.id == result.jd_id).first()
-    jd_desc = jd.description if jd else ""
-    print(
-        f"[PDF REPORT] Loaded Job Description ID: {result.jd_id if jd else 'N/A'}"
-    )
-
-    # 4. Compute scores dynamically using ATSEngine to retrieve Keyword and
-    # Semantic scores
     try:
-        match_data = ATSEngine.calculate_match(resume.parsed_text, jd_desc)
-    except Exception as match_err:
         print(
-            f"[PDF REPORT] Error calculating match scores dynamically: {match_err}")
+            f"[PDF REPORT] Request received for result ID: {result_id}. User: {current_user.email}"
+        )
+
+        # 1. Fetch the ATSResult record
+        result = db.query(ATSResult).filter(ATSResult.id == result_id).first()
+        if not result:
+            print(
+                f"[PDF REPORT] Error: ATS result record ID {result_id} not found in database.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="ATS analysis result not found."
+            )
+
+        # 2. Verify resume ownership
+        resume = db.query(Resume).filter(
+            Resume.id == result.resume_id,
+            Resume.user_id == current_user.id).first()
+        if not resume:
+            print(
+                f"[PDF REPORT] Access Denied: User {current_user.email} does not own resume ID {result.resume_id} linked to result ID {result_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied or resume not owned by current user."
+            )
+
+        # 3. Load Job Description
+        jd = db.query(JobDescription).filter(
+            JobDescription.id == result.jd_id).first()
+        jd_desc = jd.description if jd else ""
+        print(
+            f"[PDF REPORT] Loaded Job Description ID: {result.jd_id if jd else 'N/A'}"
+        )
+
+        # 4. Compute scores dynamically using ATSEngine to retrieve Keyword and
+        # Semantic scores
+        try:
+            match_data = ATSEngine.calculate_match(resume.parsed_text, jd_desc)
+        except Exception as match_err:
+            print(
+                f"[PDF REPORT] Error calculating match scores dynamically: {match_err}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to calculate match metrics: {str(match_err)}"
+            )
+
+        # 5. Extract skills lists
+        try:
+            m_skills = json.loads(
+                result.matched_skills) if result.matched_skills else []
+        except Exception:
+            m_skills = []
+        try:
+            ms_skills = json.loads(
+                result.missing_skills) if result.missing_skills else []
+        except Exception:
+            ms_skills = []
+
+        print(
+            f"[PDF REPORT] Generating PDF byte stream. Account: {current_user.name}, Keyword Score: {match_data.get('keyword_score')}, Semantic Score: {match_data.get('semantic_score')}, Final Score: {result.ats_score}"
+        )
+
+        extracted_candidate_name = ATSEngine.extract_name(resume.parsed_text, current_user.name)
+        extracted_candidate_email = ATSEngine.extract_email(resume.parsed_text, current_user.email)
+
+        extracted_job_title = ATSEngine.extract_job_title(jd_desc, "Target Position Specification" if not jd else f"Target Job Profile (ID: {jd.id})")
+
+        # 6. Generate PDF byte stream
+        try:
+            pdf_buffer = PDFGenerator.generate_report(
+                candidate_name=extracted_candidate_name,
+                candidate_email=extracted_candidate_email,
+                job_title=extracted_job_title,
+                upload_date=result.created_at,
+                keyword_score=match_data.get(
+                    "keyword_score",
+                    0.0),
+                semantic_score=match_data.get(
+                    "semantic_score",
+                    0.0),
+                final_score=result.ats_score,
+                matched_skills=m_skills,
+                missing_skills=ms_skills,
+                suggestions=result.suggestions,
+                category_breakdown=match_data.get(
+                    "category_breakdown",
+                    []),
+                intelligence_layer=match_data.get(
+                    "intelligence_layer",
+                    {}),
+                improvement_roadmap=match_data.get(
+                    "improvement_roadmap",
+                    []),
+                keywords_impact_analysis=match_data.get(
+                    "keywords_impact_analysis",
+                    ""),
+                skill_validation_explanation=match_data.get(
+                    "skill_validation_explanation",
+                    ""),
+                estimated_future_score=match_data.get(
+                    "estimated_future_score",
+                    "")
+            )
+        except Exception as pdf_err:
+            print(f"[PDF REPORT] Error generating PDF report: {pdf_err}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to generate PDF document: {str(pdf_err)}"
+            )
+
+        clean_filename = f"ATS_Report_Result_{result.id}.pdf"
+        print(
+            f"[PDF REPORT] PDF generated successfully. Returning file to user as: {clean_filename}")
+
+        return Response(
+            content=pdf_buffer.getvalue(),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={clean_filename}"})
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[PDF REPORT] Unhandled exception: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to calculate match metrics: {str(match_err)}"
+            detail=f"Unhandled Server Error: {str(e)}"
         )
-
-    # 5. Extract skills lists
-    try:
-        m_skills = json.loads(
-            result.matched_skills) if result.matched_skills else []
-    except Exception:
-        m_skills = []
-    try:
-        ms_skills = json.loads(
-            result.missing_skills) if result.missing_skills else []
-    except Exception:
-        ms_skills = []
-
-    print(
-        f"[PDF REPORT] Generating PDF byte stream. Account: {current_user.name}, Keyword Score: {match_data.get('keyword_score')}, Semantic Score: {match_data.get('semantic_score')}, Final Score: {result.ats_score}"
-    )
-
-    extracted_candidate_name = ATSEngine.extract_name(resume.parsed_text, current_user.name)
-    extracted_candidate_email = ATSEngine.extract_email(resume.parsed_text, current_user.email)
-
-    extracted_job_title = ATSEngine.extract_job_title(jd.description if jd else "", "Target Position Specification" if not jd else f"Target Job Profile (ID: {jd.id})")
-
-    # 6. Generate PDF byte stream
-    try:
-        pdf_buffer = PDFGenerator.generate_report(
-            candidate_name=extracted_candidate_name,
-            candidate_email=extracted_candidate_email,
-            job_title=extracted_job_title,
-            upload_date=result.created_at,
-            keyword_score=match_data.get(
-                "keyword_score",
-                0.0),
-            semantic_score=match_data.get(
-                "semantic_score",
-                0.0),
-            final_score=result.ats_score,
-            matched_skills=m_skills,
-            missing_skills=ms_skills,
-            suggestions=result.suggestions,
-            category_breakdown=match_data.get(
-                "category_breakdown",
-                []),
-            intelligence_layer=match_data.get(
-                "intelligence_layer",
-                {}),
-            improvement_roadmap=match_data.get(
-                "improvement_roadmap",
-                []),
-            keywords_impact_analysis=match_data.get(
-                "keywords_impact_analysis",
-                ""),
-            skill_validation_explanation=match_data.get(
-                "skill_validation_explanation",
-                ""),
-            estimated_future_score=match_data.get(
-                "estimated_future_score",
-                ""))
-    except Exception as pdf_err:
-        print(f"[PDF REPORT] Error generating PDF report: {pdf_err}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate PDF document: {str(pdf_err)}"
-        )
-
-    clean_filename = f"ATS_Report_Result_{result.id}.pdf"
-    print(
-        f"[PDF REPORT] PDF generated successfully. Returning file to user as: {clean_filename}")
-
-    return Response(
-        content=pdf_buffer.getvalue(),
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition": f"attachment; filename={clean_filename}"})
