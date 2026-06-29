@@ -90,6 +90,29 @@ class ATSEngine:
         return fallback_email
 
     @staticmethod
+    def extract_job_title(jd_text: str, fallback_title: str) -> str:
+        """Extracts job title from the top of the job description using heuristics."""
+        if not jd_text or not jd_text.strip():
+            return fallback_title
+            
+        try:
+            lines = [line.strip() for line in jd_text[:500].split('\n') if line.strip()]
+            invalid_words = ["about", "we are", "description", "requirements", "responsibilities", "role", "looking for"]
+            for line in lines:
+                # Clean markdown characters
+                clean_line = line.replace('*', '').replace('_', '').replace('#', '').strip()
+                if not clean_line:
+                    continue
+                # If the line is short enough and doesn't contain obvious non-title keywords
+                if len(clean_line.split()) <= 8:
+                    if not any(clean_line.lower().startswith(kw) for kw in invalid_words):
+                        return clean_line.title()
+        except Exception as e:
+            print(f"Job title extraction error: {e}")
+            
+        return fallback_title
+
+    @staticmethod
     def calculate_match(resume_text: str, job_description: str) -> dict:
         """
         Calculates NLP-based alignment metrics:
