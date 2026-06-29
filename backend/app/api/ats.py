@@ -1,7 +1,7 @@
 import json
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.models.user import User
@@ -311,10 +311,10 @@ def get_pdf_report(
 
     clean_filename = f"ATS_Report_Result_{result.id}.pdf"
     print(
-        f"[PDF REPORT] PDF generated successfully. Streaming file to user as: {clean_filename}")
+        f"[PDF REPORT] PDF generated successfully. Returning file to user as: {clean_filename}")
 
-    return StreamingResponse(
-        pdf_buffer,
+    return Response(
+        content=pdf_buffer.getvalue(),
         media_type="application/pdf",
         headers={
             "Content-Disposition": f"attachment; filename={clean_filename}"})
