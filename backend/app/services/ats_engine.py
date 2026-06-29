@@ -34,8 +34,8 @@ class ATSEngine:
             invalid_words = ["resume", "curriculum", "cv", "email", "phone", "mobile", "address", "page", "contact"]
             for line in lines:
                 # Clean markdown characters that might interfere
-                clean_line = line.replace('*', '').replace('_', '').replace('#', '').strip()
-                if not clean_line:
+                clean_line = line.replace('*', '').replace('_', '').replace('#', '').replace('`', '').strip()
+                if not clean_line or clean_line.lower() in ["json", "markdown", "html", "text"]:
                     continue
                 if any(kw in clean_line.lower() for kw in invalid_words) or "@" in clean_line or sum(c.isdigit() for c in clean_line) > 0:
                     continue
@@ -100,13 +100,15 @@ class ATSEngine:
             title_keywords = ["engineer", "developer", "analyst", "manager", "designer", "scientist", 
                               "architect", "consultant", "administrator", "specialist", "director", 
                               "executive", "coordinator", "lead", "associate", "intern", "technician", 
-                              "programmer", "officer", "assistant", "clerk", "representative", "strategist", "expert"]
+                              "programmer", "officer", "assistant", "clerk", "representative", "strategist", "expert",
+                              "doctor", "teacher", "professor", "nurse", "accountant", "auditor"]
             invalid_words = ["about", "we are", "description", "requirements", "responsibilities", "role", "looking for", "you will", "design", "build", "create", "implement", "optimize", "work"]
+            remove_words_from_title = ["uploaded", "profile", "job", "description", "resume", "cv", "candidate", "role", "position", "for", "the", "a", "an"]
             
             for line in lines:
                 # Clean markdown characters
-                clean_line = line.replace('*', '').replace('_', '').replace('#', '').strip()
-                if not clean_line:
+                clean_line = line.replace('*', '').replace('_', '').replace('#', '').replace('`', '').strip()
+                if not clean_line or clean_line.lower() in ["json", "markdown", "html", "text"]:
                     continue
                 
                 lower_line = clean_line.lower()
@@ -117,8 +119,11 @@ class ATSEngine:
                     
                 # If the line is short enough and contains a job title keyword
                 words = clean_line.split()
-                if len(words) <= 7:
+                if len(words) <= 8:
                     if any(kw in lower_line for kw in title_keywords):
+                        cleaned_words = [w for w in words if w.lower() not in remove_words_from_title]
+                        if cleaned_words:
+                            return " ".join(cleaned_words).title()
                         return clean_line.title()
             
             # Fallback heuristic: search for the first title keyword in the text
