@@ -22,7 +22,7 @@ services:
         sync: false
 
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://your-frontend-domain.vercel.app,http://localhost:5173"
+        value: "https://aiatsresumeanalyzer.vercel.app,https://aiatsresumeanalyzer-8zu43m23l-quantlens.vercel.app,http://localhost:5173"
 
       - key: SECRET_KEY
         generateValue: true
